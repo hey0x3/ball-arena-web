@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "core:sawblade",
+  "name": "Sawblade",
+  "description": "A spinning blade hits beyond the body. One shared hit cooldown.",
+  "author": "Ball Arena contributors",
+  "version": "1.1.0",
+  "appearance": {
+    "color": "#ec9396",
+    "style": "blade",
+    "body": "assets/body.png",
+    "bodyScale": 1,
+    "pivot": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "bodyTint": "#ff6663",
+    "weapon": "assets/weapon.png"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 1,
+    "cruiseSpeed": 4.8,
+    "maxSpeed": 12,
+    "contactDamage": 10,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "rotating-blade",
+      "type": "rotating-blade",
+      "name": "Rotating Blade",
+      "damage": 12,
+      "cooldown": 0.6,
+      "duration": 1,
+      "power": 0,
+      "range": 1.3,
+      "rotationSpeed": 180
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original BallGame project artwork, copied unmodified from Assets/BallGame/Sprites/Sawblade.png. See docs/UNITY_PARITY.md."
+  }
+}

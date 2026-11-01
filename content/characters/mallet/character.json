@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "core:mallet",
+  "name": "Mallet",
+  "description": "A shared puck stays in the arena while Mallet fights. Both fighters can strike and return it. Every 4 seconds, Mallet charges its next puck contact into a faster, harder shot. One damage hit per strike; no homing. A return shot can hit Mallet.",
+  "author": "Ball Arena contributors",
+  "version": "1.1.0",
+  "appearance": {
+    "color": "#c1c97f",
+    "style": "mallet",
+    "body": "assets/body.png",
+    "bodyScale": 1.0666666666666667,
+    "pivot": {
+      "x": 0.5,
+      "y": 0.51171875
+    },
+    "bodyTint": "#ffffff"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 1.25,
+    "cruiseSpeed": 4.2,
+    "maxSpeed": 12,
+    "contactDamage": 8,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "puck",
+      "type": "puck",
+      "name": "Power Shot",
+      "damage": 8,
+      "cooldown": 4,
+      "duration": 1,
+      "power": 12,
+      "range": 7,
+      "powerDamage": 24
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original BallGame project artwork, copied unmodified from Assets/BallGame/Sprites/Redesign/Mallet.png. See docs/UNITY_PARITY.md."
+  }
+}

@@ -1,0 +1,18 @@
+# Dependencies and generated outputs
+node_modules/
+.npm-cache/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local settings, secrets, and recordings
+.env
+.env.*
+!.env.example
+*.local
+*.log
+recordings/
+.DS_Store
+Thumbs.db

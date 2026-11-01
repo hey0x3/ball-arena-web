@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "core:meteorion",
+  "name": "Meteorion",
+  "description": "Telegraphs its target, then rushes with one powerful collision. Walls still rebound normally.",
+  "author": "Ball Arena contributors",
+  "version": "1.1.0",
+  "appearance": {
+    "color": "#df876d",
+    "style": "meteor",
+    "body": "assets/body.png",
+    "bodyScale": 1.0847457627118644,
+    "pivot": {
+      "x": 0.5,
+      "y": 0.50390625
+    },
+    "bodyTint": "#ffffff"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 1.7,
+    "cruiseSpeed": 3.7,
+    "maxSpeed": 12,
+    "contactDamage": 10,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "dash",
+      "type": "dash",
+      "name": "Meteor Rush",
+      "damage": 20,
+      "cooldown": 4.5,
+      "duration": 0.6,
+      "power": 6,
+      "range": 11,
+      "windup": 0.7
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original BallGame project artwork, copied unmodified from Assets/BallGame/Sprites/Redesign/Meteorion.png. See docs/UNITY_PARITY.md."
+  }
+}

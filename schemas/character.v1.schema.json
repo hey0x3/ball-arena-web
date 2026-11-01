@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 100,
+      "pattern": "^[a-z0-9-]+:[a-z0-9-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "pattern": "^#[\\da-fA-F]{6}$"
+        },
+        "style": {
+          "type": "string",
+          "enum": [
+            "core",
+            "blade",
+            "dart",
+            "shield",
+            "magnet",
+            "flame",
+            "prism",
+            "meteor",
+            "mallet"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "bodyScale": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2
+        },
+        "pivot": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "y": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        },
+        "bodyTint": {
+          "type": "string",
+          "pattern": "^#[\\da-fA-F]{6}$"
+        },
+        "weapon": {
+          "type": "string",
+          "maxLength": 150
+        }
+      },
+      "required": [
+        "color",
+        "style"
+      ],
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "maxHp": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0.15,
+          "maximum": 0.65
+        },
+        "mass": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10
+        },
+        "cruiseSpeed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 12
+        },
+        "maxSpeed": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "contactDamage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "contactInterval": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10
+        }
+      },
+      "required": [
+        "maxHp",
+        "radius",
+        "mass",
+        "cruiseSpeed",
+        "maxSpeed",
+        "contactDamage",
+        "contactInterval"
+      ],
+      "additionalProperties": false
+    },
+    "skills": {
+      "maxItems": 3,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "wall-charge",
+              "rotating-blade",
+              "projectile",
+              "shield",
+              "magnet",
+              "trail",
+              "beam",
+              "dash",
+              "puck"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "damage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "cooldown": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 30
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 10
+          },
+          "power": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "range": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 20
+          },
+          "windup": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "maxCharges": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "impulseCap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "minimumImpact": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "damagePerImpulse": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "bounceInterval": {
+            "type": "number",
+            "minimum": 0.02,
+            "maximum": 5
+          },
+          "rotationSpeed": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "reflections": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "emitInterval": {
+            "type": "number",
+            "minimum": 0.02,
+            "maximum": 2
+          },
+          "poolSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "powerDamage": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "damage",
+          "cooldown",
+          "duration",
+          "power",
+          "range"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "assets": {
+      "type": "object",
+      "properties": {
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "license",
+        "source"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "description",
+    "author",
+    "version",
+    "appearance",
+    "stats",
+    "skills",
+    "assets"
+  ],
+  "additionalProperties": false
+}

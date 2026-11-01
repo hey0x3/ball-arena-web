@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "community:my-ball",
+  "name": "My Ball",
+  "description": "Describe your ball here.",
+  "author": "Your name",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#65c9b5",
+    "style": "core"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 1.5,
+    "cruiseSpeed": 4,
+    "maxSpeed": 12,
+    "contactDamage": 10,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "wall-charge",
+      "type": "wall-charge",
+      "name": "Wall Charge",
+      "damage": 5,
+      "cooldown": 0.15,
+      "duration": 1,
+      "power": 2,
+      "range": 1
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original procedural artwork; inspired by the BallGame character concepts."
+  }
+}

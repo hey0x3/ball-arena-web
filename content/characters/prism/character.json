@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "core:prism",
+  "name": "Prism",
+  "description": "Locks its travel direction, then fires a beam that reflects twice. One hit per pulse.",
+  "author": "Ball Arena contributors",
+  "version": "1.1.0",
+  "appearance": {
+    "color": "#8ad7e0",
+    "style": "prism",
+    "body": "assets/body.png",
+    "bodyScale": 1.1228070175438596,
+    "pivot": {
+      "x": 0.5,
+      "y": 0.49609375
+    },
+    "bodyTint": "#ffffff"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 0.9,
+    "cruiseSpeed": 4.2,
+    "maxSpeed": 12,
+    "contactDamage": 6,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "beam",
+      "type": "beam",
+      "name": "Refraction",
+      "damage": 18,
+      "cooldown": 3,
+      "duration": 0.45,
+      "power": 0,
+      "range": 16,
+      "reflections": 2
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original BallGame project artwork, copied unmodified from Assets/BallGame/Sprites/Redesign/Prism.png. See docs/UNITY_PARITY.md."
+  }
+}

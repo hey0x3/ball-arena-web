@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "core:magnetron",
+  "name": "Magnetron",
+  "description": "After 3 wall bounces, briefly pulls a nearby opponent.",
+  "author": "Ball Arena contributors",
+  "version": "1.1.0",
+  "appearance": {
+    "color": "#bd98e7",
+    "style": "magnet",
+    "body": "assets/body.png",
+    "bodyScale": 1.0847457627118644,
+    "pivot": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "bodyTint": "#ffffff"
+  },
+  "stats": {
+    "maxHp": 100,
+    "radius": 0.4,
+    "mass": 1.2,
+    "cruiseSpeed": 4,
+    "maxSpeed": 12,
+    "contactDamage": 8,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "magnet",
+      "type": "magnet",
+      "name": "Polar Pull",
+      "damage": 0,
+      "cooldown": 3,
+      "duration": 1.25,
+      "power": 8,
+      "range": 3,
+      "maxCharges": 3,
+      "bounceInterval": 0.15,
+      "minimumImpact": 1
+    }
+  ],
+  "assets": {
+    "license": "MIT",
+    "source": "Original BallGame project artwork, copied unmodified from Assets/BallGame/Sprites/Redesign/Magnetron.png. See docs/UNITY_PARITY.md."
+  }
+}

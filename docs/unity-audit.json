@@ -1,0 +1,283 @@
+{
+  "inspected": "2026-10-30",
+  "baseline": "Base stats, attack 100%, level 1 and mastery 1; no campaign modifiers.",
+  "sourceHashes": {
+    "Assets/Scripts/BallCombat2D.cs": "bd601d79eae2fae4c7cfb77baa1d62a83c0c01ec2ee2a9a79dd0383a69d67b09",
+    "Assets/Scripts/BallLevelingRules.cs": "aaca43d77ebe830780c47c501676e0673eb3c193359b5183000a25413cbd5faa",
+    "Assets/Scripts/BouncingBall2D.cs": "9078c917f50235d7587c84e15b5e834412354a727685e7a2f1872ae352f14747",
+    "Assets/Scripts/BumperCharge2D.cs": "6715a201efd9fb29205f0ee6c70226100e20374d23fd5dae6d7091cb37553791",
+    "Assets/Scripts/Sawblade2D.cs": "1c1f9c0edf29fc1b32db50620479694bc8a451eecab5c002ba0b6e2402b0afa1",
+    "Assets/Scripts/Dartling2D.cs": "dccd0fc97c2489005ca3cb26f4d008d565aafda7a22eaa4fb445e2854e17c547",
+    "Assets/Scripts/DartProjectile2D.cs": "ea9d97538c8866f60bc45670d4083b9b75356fd0fe35d6513723f4ff366532af",
+    "Assets/Scripts/BallBodyArtwork2D.cs": "0b60d9855c556579080c50a3ad4731d8448182b7365a8ea64aae37b2137c6587",
+    "Assets/Scripts/Bulwark2D.cs": "db835ab7486ea1c024c8c96c9aa3b817418e729fef1cbf18e2ad38bfce3a215f",
+    "Assets/Scripts/Magnetron2D.cs": "8a7ee8e1cf1a448204ab134fa0524fa023eca3ee1bd590cd808eb23f428eb462",
+    "Assets/Scripts/Embertrail2D.cs": "103d8361a512f2a068788477b2917296296790676633f675ee16a2696486932b",
+    "Assets/Scripts/EmbertrailSegment2D.cs": "d3943dc0963b4605254aea5584a9e66b80efe526d8b2f6fe5103fd555d4acae9",
+    "Assets/Scripts/PrismBeam2D.cs": "c97d78f998c98211387d77f7672ca3c2a6e1bb3a3fef425b4b3140a82714a7d5",
+    "Assets/Scripts/MeteorCharge2D.cs": "a0331d7a1635258be5fc8cbaf0ceba1211e21ec5476fa439a3c7ce94153dc257",
+    "Assets/Scripts/Mallet2D.cs": "c2bb96023a3cfacc2c56d493c9671370681bc082b8ea234892796da12a5c235b",
+    "Assets/Scripts/AirHockeyPuck2D.cs": "5c7ccad84aa6efbaa68e9bb5500a4ddc0e67be3b891acb45b391666cb4c7a6d9",
+    "Assets/Scenes/SampleScene.unity": "9202648d0c59c2188a9fb8c8180d1aa1935fc7707923c3211cf52c3759fc550c",
+    "ProjectSettings/TimeManager.asset": "1a83e54adbbda7c9f4851103a0c6ab7f6448a3343d4ea5b7620452fa08416ecd",
+    "Tools/EditorChecks/SetupMallet.cs": "597f2f7476051896c11dd01eff27ad878defeaff67eaf04a6b79e3deeb2cb961"
+  },
+  "characters": [
+    {
+      "character": "Bumper",
+      "definition": "Assets/BallGame/Characters/Bumper.asset",
+      "definitionHash": "534aa415cb82471ca91a32b6de3af2524f5964affe3c7f84aeed433d8152cdf7",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Bumper.png",
+      "artworkHash": "1297cdf6d263b7ce4023493b18119b3c7866c4af05df79b0098229f202901c29",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1.5,
+        "cruiseSpeed": 4,
+        "maxSpeed": 12,
+        "contactDamage": 10,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "wall-charge",
+        "type": "wall-charge",
+        "name": "Wall Charge",
+        "damage": 5,
+        "cooldown": 0.15,
+        "duration": 1,
+        "power": 2,
+        "range": 1,
+        "maxCharges": 3,
+        "impulseCap": 6,
+        "minimumImpact": 1,
+        "damagePerImpulse": 2.5
+      }
+    },
+    {
+      "character": "Sawblade",
+      "definition": "Assets/BallGame/Characters/Sawblade.asset",
+      "definitionHash": "07ca078ebda274fbbf8100d2376fe2ca8c5aceaa861287172f0fb4044a78e05d",
+      "artwork": "Assets/BallGame/Sprites/Sawblade.png",
+      "artworkHash": "06cb06777e6b2b252103640751464d619df23c091a79408bdfbbb5f309095223",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1,
+        "cruiseSpeed": 4.8,
+        "maxSpeed": 12,
+        "contactDamage": 10,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "rotating-blade",
+        "type": "rotating-blade",
+        "name": "Rotating Blade",
+        "damage": 12,
+        "cooldown": 0.6,
+        "duration": 1,
+        "power": 0,
+        "range": 1.3,
+        "rotationSpeed": 180
+      }
+    },
+    {
+      "character": "Dartling",
+      "definition": "Assets/BallGame/Characters/Dartling.asset",
+      "definitionHash": "6ade9ed2ec79223149876e212d49d5c707fc86c7ba8816f2ed512239bfa53489",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Dartling.png",
+      "artworkHash": "06a76355ff70abaf47a1f34e3b87e5e1b35be1ae7bf6d74ffc1990ae4a869c26",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1,
+        "cruiseSpeed": 4.2,
+        "maxSpeed": 12,
+        "contactDamage": 8,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "projectile",
+        "type": "projectile",
+        "name": "Dart Shot",
+        "damage": 14,
+        "cooldown": 2.5,
+        "duration": 1.5,
+        "power": 8,
+        "range": 8,
+        "poolSize": 4
+      }
+    },
+    {
+      "character": "Bulwark",
+      "definition": "Assets/BallGame/Characters/Bulwark.asset",
+      "definitionHash": "e17f93647ad4445a78bfafb371c7299112aa535cea35c01e7891e70f8fdee7f4",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Bulwark.png",
+      "artworkHash": "d36acf253b9e49d64fbaa8037195948fb204c71f15565564c31337e5c7a8eae3",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1.8,
+        "cruiseSpeed": 3.6,
+        "maxSpeed": 12,
+        "contactDamage": 8,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "shield",
+        "type": "shield",
+        "name": "Aegis",
+        "damage": 25,
+        "cooldown": 5,
+        "duration": 3,
+        "power": 0,
+        "range": 1
+      }
+    },
+    {
+      "character": "Magnetron",
+      "definition": "Assets/BallGame/Characters/Magnetron.asset",
+      "definitionHash": "10df61f08310ac479854141892a4e560dd5633ff2a199ae66ce650023af0430b",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Magnetron.png",
+      "artworkHash": "b06816c486c2cb76e395e301eab423055db7b17903fef2b7d53793e44e813baa",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1.2,
+        "cruiseSpeed": 4,
+        "maxSpeed": 12,
+        "contactDamage": 8,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "magnet",
+        "type": "magnet",
+        "name": "Polar Pull",
+        "damage": 0,
+        "cooldown": 3,
+        "duration": 1.25,
+        "power": 8,
+        "range": 3,
+        "maxCharges": 3,
+        "bounceInterval": 0.15,
+        "minimumImpact": 1
+      }
+    },
+    {
+      "character": "Embertrail",
+      "definition": "Assets/BallGame/Characters/Embertrail.asset",
+      "definitionHash": "f83cb157a282ff84751c4ff5f43807d8e67a3971ce3923d6b905dd6ae0aa076d",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Embertrail.png",
+      "artworkHash": "33d7c9eeb94b458634a35cb1e547820bcbd695638d9d0fbd80c263b5d8a26e88",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1,
+        "cruiseSpeed": 4.4,
+        "maxSpeed": 12,
+        "contactDamage": 8,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "trail",
+        "type": "trail",
+        "name": "Fire Wake",
+        "damage": 4,
+        "cooldown": 0.5,
+        "duration": 2.5,
+        "power": 0,
+        "range": 0.22,
+        "emitInterval": 0.1,
+        "poolSize": 32
+      }
+    },
+    {
+      "character": "Prism",
+      "definition": "Assets/BallGame/Characters/Prism.asset",
+      "definitionHash": "69bef48ca6c3d242f232ed97fb3e34cc3472efc8fb46faf665e15058f5a99895",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Prism.png",
+      "artworkHash": "56f210bd83be89006a21f0c3a1bfd35d62dfff849c7d681683df9802b49aa3f5",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 0.9,
+        "cruiseSpeed": 4.2,
+        "maxSpeed": 12,
+        "contactDamage": 6,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "beam",
+        "type": "beam",
+        "name": "Refraction",
+        "damage": 18,
+        "cooldown": 3,
+        "duration": 0.45,
+        "power": 0,
+        "range": 16,
+        "reflections": 2
+      }
+    },
+    {
+      "character": "Meteorion",
+      "definition": "Assets/BallGame/Characters/Meteorion.asset",
+      "definitionHash": "250c30caf3c42daf1402eb114e67c1e4a14bd6766a30905afb7abbac25e63607",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Meteorion.png",
+      "artworkHash": "9432c9f7e35b094d620265e38496779a4442adf2aa5de5e23ae106d39de2321e",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1.7,
+        "cruiseSpeed": 3.7,
+        "maxSpeed": 12,
+        "contactDamage": 10,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "dash",
+        "type": "dash",
+        "name": "Meteor Rush",
+        "damage": 20,
+        "cooldown": 4.5,
+        "duration": 0.6,
+        "power": 6,
+        "range": 11,
+        "windup": 0.7
+      }
+    },
+    {
+      "character": "Mallet",
+      "definition": "Assets/BallGame/Characters/Mallet.asset",
+      "definitionHash": "523d7d5872344e6ac2223d571599c4ad961ca3322affa837d7024b7978f4e398",
+      "artwork": "Assets/BallGame/Sprites/Redesign/Mallet.png",
+      "artworkHash": "35dbec6db6552cd86198c8dc78c75c50bb9b3d1abf52c93cf1847b37c7ba9a9e",
+      "stats": {
+        "maxHp": 100,
+        "radius": 0.4,
+        "mass": 1.25,
+        "cruiseSpeed": 4.2,
+        "maxSpeed": 12,
+        "contactDamage": 8,
+        "contactInterval": 0.5
+      },
+      "skill": {
+        "id": "puck",
+        "type": "puck",
+        "name": "Power Shot",
+        "damage": 8,
+        "cooldown": 4,
+        "duration": 1,
+        "power": 12,
+        "range": 7,
+        "powerDamage": 24
+      }
+    }
+  ],
+  "effects": [
+    {
+      "source": "Assets/BallGame/Sprites/Flame.png",
+      "file": "src/rendering/assets/flame.png",
+      "sha256": "b35feb86a63d47bc945db510a721e3925781c9905b3b5521e49c94183519c65b",
+      "license": "MIT"
+    }
+  ]
+}
