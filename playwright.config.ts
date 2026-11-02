@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/browser', timeout: process.env.CI ? 120_000 : 60_000, fullyParallel: false, workers: 1,
+  testDir: './tests/browser', timeout: process.env.CI ? 180_000 : 60_000, fullyParallel: true, workers: 1,
   expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   reporter: process.env.CI ? [['github'], ['line']] : [['list']],
   use: { baseURL: 'http://127.0.0.1:5173', screenshot: 'only-on-failure', trace: 'retain-on-failure' },

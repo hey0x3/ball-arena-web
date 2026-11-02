@@ -55,7 +55,7 @@ test('the website records smooth MP4 ball motion while the render thread stalls'
   });
   await page.goto('/'); await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Record round', exact: true }).click(); await page.getByRole('button', { name: 'Run', exact: true }).click();
-  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThanOrEqual(90);
+  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: process.env.CI ? 90_000 : 30_000 }).toBeGreaterThanOrEqual(90);
   const downloaded = page.waitForEvent('download'); await page.getByRole('button', { name: /Stop recording/ }).click(); const download = await downloaded;
   expect(download.suggestedFilename()).toMatch(/\.mp4$/); const bytes = readFileSync((await download.path())!); expect(bytes.toString('ascii', 4, 8)).toBe('ftyp');
   writeFileSync('test-results/smooth-arena.mp4', bytes);

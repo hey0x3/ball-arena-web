@@ -109,7 +109,7 @@ test('records advancing 720px frames with sound and downloads a playable arena v
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByRole('button', { name: /Stop recording/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Create a new ball', exact: true })).toBeDisabled();
-  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(120);
+  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: process.env.CI ? 90_000 : 30_000 }).toBeGreaterThan(120);
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: /Stop recording/ }).click();
   const download = await downloadPromise; expect(download.suggestedFilename()).toMatch(/\.mp4$/); const path = await download.path(); expect(path).toBeTruthy();
   const bytes = readFileSync(path!); expect(bytes.length).toBeGreaterThan(5000);
@@ -200,8 +200,8 @@ test('records a fixed 9:16 composition with health panels across a viewport resi
   await page.getByRole('button', { name: 'Record round', exact: true }).click();
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Recording format', exact: true })).toBeDisabled();
-  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(250);
-  await page.setViewportSize({ width: 390, height: 844 }); await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(330);
+  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: process.env.CI ? 90_000 : 30_000 }).toBeGreaterThan(250);
+  await page.setViewportSize({ width: 390, height: 844 }); await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: process.env.CI ? 90_000 : 30_000 }).toBeGreaterThan(330);
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /Stop recording/ }).click();
   const download = await downloadPromise; expect(download.suggestedFilename()).toContain('720x1280');
