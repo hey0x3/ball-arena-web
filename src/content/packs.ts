@@ -1,5 +1,5 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { validateCharacter, type SavedCharacter } from './schema';
+import { characterAssetPaths, validateCharacter, type SavedCharacter } from './schema';
 
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_EXPANDED = 20 * 1024 * 1024;
@@ -26,7 +26,7 @@ export async function importPack(file: File): Promise<SavedCharacter> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (file.name.toLowerCase().endsWith('.json')) {
     const character = validateCharacter(JSON.parse(strFromU8(bytes)));
-    if (character.appearance.body || character.appearance.weapon) throw new Error('This character uses artwork. Import a ZIP with its assets folder.');
+    if (characterAssetPaths(character).length) throw new Error('This character uses artwork. Import a ZIP with its assets folder.');
     return { character, media: {} };
   }
   let size = 0, count = 0;
@@ -41,7 +41,7 @@ export async function importPack(file: File): Promise<SavedCharacter> {
   if (!files['character.json']) throw new Error('ZIP must contain character.json at its root.');
   const character = validateCharacter(JSON.parse(strFromU8(files['character.json'])));
   const media: Record<string, string> = {};
-  for (const path of [character.appearance.body, character.appearance.weapon].filter((p): p is string => !!p)) {
+  for (const path of characterAssetPaths(character)) {
     const data = files[path]; if (!data) throw new Error('The artwork referenced in character.json is missing: ' + path);
     media[path] = await imageData(new Blob([new Uint8Array(data)]));
   }
@@ -50,7 +50,7 @@ export async function importPack(file: File): Promise<SavedCharacter> {
 export async function exportPack(entry: SavedCharacter) {
   const character = validateCharacter(entry.character);
   const files: Record<string, Uint8Array> = { 'character.json': strToU8(JSON.stringify(character, null, 2)) };
-  for (const path of [character.appearance.body, character.appearance.weapon].filter((p): p is string => !!p)) {
+  for (const path of characterAssetPaths(character)) {
     let data = entry.media[path];
     if (!data) throw new Error('Body artwork is missing.');
     if (!data.startsWith('data:')) {

@@ -1,12 +1,14 @@
-# Implementation status — v0.2.0
+# Implementation status — v0.3.0
 
-30 October 2026. The approved stack is implemented as a local static application. The original [plan](PLAN.md) remains the design roadmap.
+Updated 2 November 2026. The approved stack is implemented as a local static application. The original [plan](PLAN.md) remains the design roadmap.
 
 ## Working
 
 - React desktop workspace with the arena and right sidebar always side by side, dark/light themes and keyboard-accessible forms. The workspace has a 960 px minimum width and scrolls horizontally in narrower windows; it no longer switches to a stacked phone layout.
+- The contender heading and A/B selector are grouped above Run in the bottom simulation controls, independent of roster scrolling. Origin filters group Ball Arena, League of Legends, Dota 2 and community-supplied universes, combine with search and My creations, and include character counts. Optional `origin` metadata is editable and portable; older community packs fall back to Original creations. The bottom controls can scroll when settings are expanded in short desktop windows.
 - Contender B health above the arena and contender A health below, with accessible live progress bars. A persisted display toggle controls HP numbers on ball bodies in both the live view and recordings.
-- Both panels show all skills' live phases, cooldowns, windups, active durations, charge requirements, and readiness bars. These values come from simulation state and are shared with the portrait recorder.
+- Both panels use one compact horizontal strip with portrait/HP and up to three skill icons. Radial cooldown masks, numeric timers/charge counts, phase captions and readiness bars use the shared simulation-time formatter. Hover/focus/click details expose names, full states and mechanics; keyboard Escape dismisses them. Official Riot/Valve icons are bundled for their characters, with code-native symbols for original/custom skills. The 9:16 recorder draws the same icons and readouts in fixed 100px health cards, leaving room for the full 720×720 arena.
+- The center floor pattern is replaced by the ball arena. wordmark and overlapping-circle symbol at low opacity. It renders beneath combat, adapts to light/dark mode, and is included in both capture formats.
 - PixiJS WebGL canvas at a fixed 720×720 backing resolution, matching the reference arena's square field, rails, chassis, quiet floor and HP overlays.
 - Clean ball artwork without added perimeter outlines or floating A/B labels. Dartling tracks the displayed target and holds its sampled firing direction through the shot flash. Embertrail uses the original Unity flame sprite, bright capsule segments, and simulation-time flicker/fade.
 - Visible activation effects for every skill: Meteorion's windup/comet rush/impact, Bumper's charged wake, blade and muzzle sparks, glass shield facets/absorption/break effects, directional magnetic pull arrows, reflected beam flashes, and Mallet's power-ready/charged puck effects. Effects follow real simulation state, freeze on pause, and appear in square and portrait recordings.
@@ -15,7 +17,11 @@
 - Grab either ball's arrow directly inside the ready arena and drag its tip to aim. Generous hit areas and pointer capture keep the arrow attached while dragging; the visible grips also support keyboard controls. Values persist in browser settings and setup exports; invalid older settings fall back safely. Resuming preserves current velocity; Reset returns to setup for aiming again.
 - Full damage batching and neutral simultaneous-KO draws, independent mirror-match state, and fresh worlds on restart.
 - All nine regular base characters ported against their Unity definitions and scripts. [UNITY_PARITY.md](UNITY_PARITY.md) and [unity-audit.json](unity-audit.json) document the source, values, and targeted checks. Approved detailed sprites and Sawblade's retained legacy body/weapon are copied unmodified with matching scale, pivots, and tint.
+- Aatrox (Q/W/R) and Ekko (Q/E/R) add six dedicated customizable mechanics, the supplied portraits, sword/chain/wing/time effects, four-second bounded history and an actual delayed echo. [LEAGUE_CHARACTERS.md](LEAGUE_CHARACTERS.md) documents simulator tuning, behavior, checks and Riot artwork attribution. Health cards keep readable width when both contenders have three skills.
+- Ahri (Q/E/R), Caitlyn (Q/W/R) and Fizz (Q/E/R) add nine reusable mechanics and official bundled portraits to the League category: returning orb/charm/three spirit dashes, charged rifle/armed traps with follow-up headshots/targeted snipe, and targetable dash-through/untargetable vault/delayed shark. Their distinct effects, real cooldowns, editor parameters and recording support use independent per-slot state. [The League notes](LEAGUE_CHARACTERS.md) cover behavior, source credits and test/recording previews.
+- Pudge adds Meat Hook's linked-chain projectile and physical reel, Rot's toxic cloud/non-lethal self-damage, and Dismember's interrupted disable/pull/drain channel. The editor exposes all three and their tick parameters. Live skill readouts and both recording formats include his effects; horizontal portraits retain their proportions in every view. [DOTA_CHARACTERS.md](DOTA_CHARACTERS.md) records Valve source mechanics, arena tuning, artwork attribution and verification.
 - Character editor for identity, colors/styles, PNG/WebP artwork, stats, named skills and their parameters, credits, and zero to three skills.
+- Optional per-skill PNG/WebP icons are editable and survive body-art replacement, browser storage and ZIP round trips. The validator, generated schema, catalog and pack media collection share the same relative asset path rules. Existing packs require no migration.
 - IndexedDB custom characters; portable JSON/ZIP imports, ZIP exports with media, duplicate handling, and import limits.
 - Shared Zod validation plus generated JSON Schema. Automatic discovery of contributed character directories and local artwork.
 - Record round prepares a fresh recording. Run starts capture and the round at 1x using the chosen launch directions, with optional synthesized arena audio, a result tail and automatic download. Choose a 720×720 square arena clip or a fixed 720×1280 (9:16) portrait with the complete square arena, both live health panels, timer and seed. Portrait composition is independent of viewport size and does not alter physics. Manual early stop and re-download are available.
@@ -28,13 +34,17 @@
 
 `npm run test:e2e`: desktop Chrome checks covering frame advancement/pause, switching, light theme and narrow desktop windows, character editing/storage, three-slot limits, ZIP/artwork round trips, invalid imports, actual video decode/advancing frames/audio, automatic download, HP placement/toggle, fixed portrait dimensions across resize, live skill timers, and all three skill readouts fitting in the panels. A controlled renderer check samples Dartling's actual gold muzzle in four directions and through the shot lock, checks that floating A/B labels are absent, and verifies visible fire pixels and paused flame animation. [Fire preview](embertrail-preview.png).
 
-`npm run build` includes typechecking and validation of the nine characters, starter template, and generated schema, then produces `dist/`. The PixiJS renderer is the largest bundle chunk and currently triggers Vite's size advisory.
+`npm run build` includes typechecking and validation of all fifteen characters, the starter template, and generated schema, then produces `dist/`. The PixiJS renderer is the largest bundle chunk and currently triggers Vite's size advisory.
 
 `tests/browser/skill-effects.spec.ts` compares actual rendered idle/activated frames for the eight non-trail skills, checks their animation and paused frames, and verifies rendering does not mutate combat. Embertrail is covered by the existing fire renderer case. The portrait download check records Meteorion versus Prism through the first rush and decodes an actual exported frame.
 
 Launch tests verify chosen velocities, readiness without time/skill/puck advancement, paused velocity, option validation and isolation. Browser cases drag the actual arena arrow grips independently, check keyboard input, persisted/exported angles, explicit Run, setup reset/cancel behavior, and recording preparation without movement.
 
 Browser checks use isolated test profiles. Narrow-window checks verify that the desktop workspace stays side by side and its controls remain reachable. Chrome is the recording environment verified so far. Firefox, Safari, Edge, and physical-device capture still need validation.
+
+`tests/browser/compact-hud.spec.ts` verifies the one-row icon layout, loaded artwork, live cooldown progress and paused timers, keyboard/mouse tooltips, custom-icon/media round trips and decoded square/portrait watermarks. `tests/compact-status.test.ts` covers clocks, charge requirements, shield capacity, recasts and interruptions. [Compact HUD](compact-hud-dark.png) · [Light HUD](compact-hud-light.png) · [Decoded portrait](compact-recording-1.png).
+
+`tests/browser/origins.spec.ts` verifies the bottom contender controls at desktop widths and short window heights, origin counts and filtering combined with search, independent A/B choices, arbitrary creator-supplied categories, persistence/export and older packs without origin metadata. [Dark layout](origin-categories-dark.png) · [Light layout](origin-categories-light.png).
 
 ## Remaining parity and expansion
 

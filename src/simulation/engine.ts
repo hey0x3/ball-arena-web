@@ -1,6 +1,9 @@
 import { World, Vec2, Circle, Box, Polygon, type Body, type Contact } from 'planck';
 import { validateCharacter, type Character, type Skill } from '../content/schema';
 import { behaviors } from '../skills/registry';
+import { worldEnder, type ChampionState } from '../skills/champions';
+import type { PudgeState } from '../skills/pudge';
+import type { LeagueState } from '../skills/league';
 import { isLaunchAngles, type LaunchAngles } from './launch';
 import { bladePoints, buildBeamPath, clipSegment, direction, length, pointDistanceSquared, segmentDistanceSquared, type Point } from './geometry';
 export { direction } from './geometry';
@@ -13,16 +16,22 @@ export type SkillState = {
   hits: Map<string, number>; pendingBounce: boolean; flash: number; targeting: boolean;
   aim: Point; path: Point[]; emitOrigin: Point | null; emitClock: number;
   activations: number; lastForce: number; lastDamage: number;
+  champion?: ChampionState;
+  pudge?: PudgeState;
+  league?: LeagueState;
 };
 export type Fighter = {
   id: string; definition: Character; body: Body; previous: Point; hp: number; shield: number;
   hitFlash: number; recovery: number; skills: SkillState[]; contactHits: Map<string, number>;
   pendingImpulse: Point; pendingForce: Point; lastDirection: Point; stalled: number;
+  rootUntil: number; heldVelocity: Point | null; slowUntil: number; slowFactor: number; untargetableUntil: number; phasing: boolean; ghostUntil: number;
+  damageTaken: number; history: { time: number; position: Point; velocity: Point; damageTaken: number }[];
+  controls: Map<string, { until: number; disable: boolean }>; channeling: string | null; interruptions: number;
 };
 export type Particle = { kind: 'hit' | 'wall' | 'beam' | 'pulse' | 'dash'; x: number; y: number; end?: Point; color: string; life: number; duration: number; text?: string };
 export type Projectile = { id: number; owner: string; skillId: string; x: number; y: number; previous: Point; vx: number; vy: number; radius: number; damage: number; life: number; color: string };
 export type Zone = { owner: string; skillId: string; x: number; y: number; start: Point; end: Point; radius: number; damage: number; interval: number; life: number; duration: number; color: string; hits: Map<string, number> };
-export type Hit = { source: string; target: string; damage: number; impulse: Point };
+export type Hit = { source: string; target: string; damage: number; impulse: Point; leech: number; nonlethal?: boolean };
 export type Puck = { body: Body; owner: string | null; damage: number; previous: Point; hits: Map<string, number>; lastStrike: number; power: number; color: string; armed: boolean; powered: boolean; strokeSpeed: number; strikes: number; hitsDealt: number; present: boolean };
 export type SimOptions = { seed: string; shrink: boolean; timeout: number; launchAngles?: LaunchAngles };
 export type SkillContext = { engine: Simulation; self: Fighter; target: Fighter; skill: Skill; state: SkillState; dt: number; direction: Point };
@@ -32,7 +41,7 @@ export function seededRandom(seed: string): () => number {
   return () => { a += 0x6D2B79F5; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 export function initialSkillState(skill: Skill): SkillState {
-  return { cooldown: ['projectile', 'shield', 'beam', 'dash', 'puck'].includes(skill.type) ? skill.cooldown : 0,
+  return { cooldown: !['wall-charge', 'rotating-blade', 'magnet', 'trail'].includes(skill.type) ? skill.cooldown : 0,
     active: 0, capacity: 0, charges: 0, lastWall: -Infinity, lastEmit: 0, hits: new Map(), pendingBounce: false,
     flash: 0, targeting: false, aim: { x: 0, y: 1 }, path: [], emitOrigin: null, emitClock: 0,
     activations: 0, lastForce: 0, lastDamage: 0 };
@@ -84,7 +93,10 @@ export class Simulation {
       }
       const fighter: Fighter = { id: String(index), definition, body, previous: { ...position }, hp: definition.stats.maxHp,
         shield: 0, hitFlash: 0, recovery: 0, contactHits: new Map(), skills: definition.skills.map(initialSkillState),
-        pendingImpulse: { x: 0, y: 0 }, pendingForce: { x: 0, y: 0 }, lastDirection: { x: 0, y: 1 }, stalled: 0 };
+        pendingImpulse: { x: 0, y: 0 }, pendingForce: { x: 0, y: 0 }, lastDirection: { x: 0, y: 1 }, stalled: 0,
+        rootUntil: 0, heldVelocity: null, slowUntil: 0, slowFactor: 1, untargetableUntil: 0, phasing: false, ghostUntil: 0, damageTaken: 0,
+        controls: new Map(), channeling: null, interruptions: 0,
+        history: [{ time: 0, position: { ...position }, velocity: { x: 0, y: 0 }, damageTaken: 0 }] };
       body.setUserData(fighter); this.fighters.push(fighter);
     });
     if (definitions.some(c => c.skills.some(s => s.type === 'puck'))) {
@@ -147,10 +159,53 @@ export class Simulation {
   pause() { if (this.phase === 'running') this.phase = 'paused'; }
   applyImpulse(f: Fighter, p: Point) { f.pendingImpulse.x += p.x; f.pendingImpulse.y += p.y; }
   applyForce(f: Fighter, p: Point) { f.pendingForce.x += p.x; f.pendingForce.y += p.y; }
-  queueHit(source: Fighter, target: Fighter, damage: number, impulse: Point = { x: 0, y: 0 }) {
-    if (damage >= 0) this.pending.push({ source: source.id, target: target.id, damage, impulse });
+  hold(f: Fighter, seconds: number) {
+    if (seconds <= 0) return;
+    f.heldVelocity ??= { ...f.body.getLinearVelocity() }; f.rootUntil = Math.max(f.rootUntil, this.elapsed + seconds);
+  }
+  disabled(f: Fighter) { return [...f.controls.values()].some(c => c.disable && c.until > this.elapsed); }
+  canAct(f: Fighter) { return f.untargetableUntil <= this.elapsed && !this.disabled(f) && !f.channeling; }
+  control(f: Fighter, key: string, seconds: number, disable = true) {
+    if (seconds <= 0) return;
+    if (disable && (f.controls.get(key)?.until ?? 0) <= this.elapsed) f.interruptions++;
+    f.heldVelocity ??= { ...f.body.getLinearVelocity() };
+    f.controls.set(key, { until: this.elapsed + seconds, disable });
+  }
+  release(f: Fighter, key: string) { f.controls.delete(key); }
+  slow(f: Fighter, amount: number, seconds: number) {
+    if (f.slowUntil <= this.elapsed) f.slowFactor = 1;
+    f.slowFactor = Math.min(f.slowFactor, 1 - amount); f.slowUntil = Math.max(f.slowUntil, this.elapsed + seconds);
+  }
+  setPhasing(f: Fighter, seconds: number) {
+    f.untargetableUntil = seconds > 0 ? this.elapsed + seconds : 0; f.phasing = seconds > 0;
+    for (let fixture = f.body.getFixtureList(); fixture; fixture = fixture.getNext()) fixture.setSensor(f.phasing || f.ghostUntil > this.elapsed);
+  }
+  setGhosting(f: Fighter, seconds: number) {
+    f.ghostUntil = seconds > 0 ? this.elapsed + seconds : 0;
+    for (let fixture = f.body.getFixtureList(); fixture; fixture = fixture.getNext()) fixture.setSensor(f.phasing || f.ghostUntil > this.elapsed);
+  }
+  teleport(f: Fighter, position: Point, velocity?: Point) {
+    const limit = Math.max(0, this.half - effectiveRadius(f));
+    const at = { x: Math.max(-limit, Math.min(limit, position.x)), y: Math.max(-limit, Math.min(limit, position.y)) };
+    f.body.setPosition(Vec2(at.x, at.y)); f.previous = { ...at };
+    if (velocity) { f.body.setLinearVelocity(Vec2(velocity.x, velocity.y)); f.heldVelocity = null; }
+    f.recovery = .25;
+  }
+  heal(f: Fighter, amount: number) {
+    const healing = Math.min(f.definition.stats.maxHp - f.hp, Math.max(0, Math.round(amount * worldEnder(f).healing)));
+    if (healing) { f.hp += healing; this.effect('hit', f.body.getPosition(), '#83ffd1', .65, undefined, '+' + healing); }
+    return healing;
+  }
+  queueHit(source: Fighter, target: Fighter, damage: number, impulse: Point = { x: 0, y: 0 }, drain = 0) {
+    if (target.untargetableUntil > this.elapsed) return;
+    const buff = worldEnder(source);
+    if (damage >= 0) this.pending.push({ source: source.id, target: target.id, damage: damage * buff.damage, impulse, leech: buff.leech + drain });
+  }
+  queueSelfDamage(f: Fighter, damage: number) {
+    if (damage > 0) this.pending.push({ source: f.id, target: f.id, damage, impulse: { x: 0, y: 0 }, leech: 0, nonlethal: true });
   }
   reserveWeapon(self: Fighter, target: Fighter, skill: Skill, state: SkillState) {
+    if (!this.canAct(self)) return false;
     if (!skill.damage || this.elapsed < (self.contactHits.get(target.id) ?? -Infinity) - .000001) return false;
     self.contactHits.set(target.id, this.elapsed + skill.cooldown); state.flash = .16; state.lastDamage = skill.damage;
     this.queueHit(self, target, skill.damage); return true;
@@ -226,15 +281,19 @@ export class Simulation {
     }
   }
   resolveHits() {
+    const healing = new Map<string, number>();
     for (const hit of this.pending.splice(0)) {
       const target = this.fighters.find(f => f.id === hit.target)!; let damage = Math.max(0, Math.round(hit.damage));
+      if (target.untargetableUntil > this.elapsed) continue;
       const absorbed = Math.min(target.shield, damage); target.shield -= absorbed; damage -= absorbed;
       let remaining = absorbed;
       for (const state of target.skills) {
         const used = Math.min(state.capacity, remaining); state.capacity -= used; remaining -= used;
         if (used > 0) { state.flash = .22; if (!state.capacity) state.active = 0; }
       }
-      const applied = Math.min(target.hp, damage); target.hp -= applied;
+      const applied = Math.min(Math.max(0, target.hp - (hit.nonlethal ? 1 : 0)), damage); target.hp -= applied;
+      target.damageTaken += applied;
+      if (applied && hit.leech) healing.set(hit.source, (healing.get(hit.source) ?? 0) + applied * hit.leech);
       if (applied || absorbed) {
         target.hitFlash = .18; this.totalHits++;
         this.effect('hit', target.body.getPosition(), target.definition.appearance.color, .65, undefined, absorbed && !applied ? 'BLOCK' : '−' + applied);
@@ -242,15 +301,22 @@ export class Simulation {
       target.body.applyLinearImpulse(Vec2(hit.impulse.x, hit.impulse.y), target.body.getWorldCenter(), true);
       if (length(hit.impulse)) target.recovery = .25;
     }
+    for (const [id, amount] of healing) this.heal(this.fighters.find(f => f.id === id)!, amount);
     const dead = this.fighters.filter(f => f.hp <= 0);
     if (dead.length && this.phase !== 'finished') this.finish(dead.length === 2 ? 'Simultaneous knockout · draw' : this.fighters.find(f => f.hp > 0)!.definition.name + ' wins');
   }
   private finish(result: string) {
     this.result = result; this.phase = 'finished'; this.resolutionCount++; this.projectiles = []; this.zones = [];
-    for (const f of this.fighters) { f.shield = 0; for (const s of f.skills) { s.capacity = 0; s.active = 0; s.targeting = false; s.pendingBounce = false; } }
+    for (const f of this.fighters) { f.shield = 0; f.controls.clear(); f.channeling = null; this.setGhosting(f, 0); this.setPhasing(f, 0); for (const s of f.skills) { s.capacity = 0; s.active = 0; s.targeting = false; s.pendingBounce = false; s.champion = undefined; s.pudge = undefined; s.league = undefined; } }
     if (this.puck) { this.puck.owner = null; this.puck.armed = false; this.puck.present = false; this.puck.body.setLinearVelocity(Vec2(0, 0)); }
   }
   private move(f: Fighter) {
+    if (f.rootUntil > this.elapsed + .000001 || [...f.controls.values()].some(c => c.until > this.elapsed)) {
+      f.body.setLinearVelocity(Vec2(0, 0)); f.pendingImpulse = { x: 0, y: 0 }; f.pendingForce = { x: 0, y: 0 }; return;
+    }
+    if (f.heldVelocity) { f.body.setLinearVelocity(Vec2(f.heldVelocity.x, f.heldVelocity.y)); f.heldVelocity = null; }
+    const slow = f.slowUntil > this.elapsed ? f.slowFactor : 1;
+    const cruise = f.definition.stats.cruiseSpeed * worldEnder(f).speed * slow;
     let v = { ...f.body.getLinearVelocity() };
     const external = length(f.pendingImpulse) > 0 || length(f.pendingForce) > 0;
     if (external) { v.x += (f.pendingImpulse.x + f.pendingForce.x * STEP) / f.body.getMass(); v.y += (f.pendingImpulse.y + f.pendingForce.y * STEP) / f.body.getMass(); f.recovery = .25; }
@@ -260,7 +326,8 @@ export class Simulation {
     if (speed > .01) {
       f.lastDirection = { x: v.x / speed, y: v.y / speed }; f.stalled = 0;
       speed = Math.min(speed, f.definition.stats.maxSpeed);
-      if (!external && f.recovery <= 0) speed += Math.sign(f.definition.stats.cruiseSpeed - speed) * Math.min(Math.abs(f.definition.stats.cruiseSpeed - speed), 3 * STEP);
+      if (!external && f.recovery <= 0) speed += Math.sign(cruise - speed) * Math.min(Math.abs(cruise - speed), 3 * STEP);
+      if (slow < 1 && !external) speed = Math.min(speed, cruise);
       v = { x: f.lastDirection.x * speed, y: f.lastDirection.y * speed };
     } else {
       f.stalled += STEP;
@@ -324,6 +391,9 @@ export class Simulation {
     }
     this.zones = this.zones.filter(z => z.life > .0002);
     for (const f of this.fighters) {
+      for (const [key, control] of f.controls) if (control.until <= this.elapsed) f.controls.delete(key);
+      if (f.phasing && f.untargetableUntil <= this.elapsed) this.setPhasing(f, 0);
+      if (f.ghostUntil > 0 && f.ghostUntil <= this.elapsed) this.setGhosting(f, 0);
       f.hitFlash = Math.max(0, f.hitFlash - STEP);
       f.definition.skills.forEach((skill, i) => { f.skills[i].flash = Math.max(0, f.skills[i].flash - STEP); behaviors[skill.type].tick?.(this.context(f, i)); });
       f.shield = f.skills.reduce((sum, state) => sum + state.capacity, 0);
@@ -358,9 +428,14 @@ export class Simulation {
       const v = f.body.getLinearVelocity(), n = length(v); if (n > f.definition.stats.maxSpeed) f.body.setLinearVelocity(Vec2(v.x / n * f.definition.stats.maxSpeed, v.y / n * f.definition.stats.maxSpeed));
     }
     this.resolveHits();
+    for (const f of this.fighters) {
+      f.history.push({ time: this.elapsed, position: { ...f.body.getPosition() }, velocity: { ...f.body.getLinearVelocity() }, damageTaken: f.damageTaken });
+      while (f.history.length > 1 && f.history[1].time < this.elapsed - 4.2) f.history.shift();
+    }
     if (this.elapsed >= this.options.timeout && (this.phase as Simulation['phase']) !== 'finished') this.finish('Time limit · draw');
   }
   private reserveContact(self: Fighter, target: Fighter) {
+    if (!this.canAct(self) || target.untargetableUntil > this.elapsed) return;
     const blade = self.definition.skills.find(s => s.type === 'rotating-blade'), damage = this.nextContactDamage(self);
     if (damage <= 0 || this.elapsed < (self.contactHits.get(target.id) ?? -Infinity) - .000001) return;
     self.contactHits.set(target.id, this.elapsed + (blade?.cooldown ?? self.definition.stats.contactInterval));

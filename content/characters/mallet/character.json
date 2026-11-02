@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "core:mallet",
   "name": "Mallet",
+  "origin": "Ball Arena",
   "description": "A shared puck stays in the arena while Mallet fights. Both fighters can strike and return it. Every 4 seconds, Mallet charges its next puck contact into a faster, harder shot. One damage hit per strike; no homing. A return shot can hit Mallet.",
   "author": "Ball Arena contributors",
   "version": "1.1.0",

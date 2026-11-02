@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "core:meteorion",
   "name": "Meteorion",
+  "origin": "Ball Arena",
   "description": "Telegraphs its target, then rushes with one powerful collision. Walls still rebound normally.",
   "author": "Ball Arena contributors",
   "version": "1.1.0",

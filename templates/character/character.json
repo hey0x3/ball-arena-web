@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "community:my-ball",
   "name": "My Ball",
+  "origin": "Original creations",
   "description": "Describe your ball here.",
   "author": "Your name",
   "version": "1.0.0",

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "core:aatrox",
+  "name": "Aatrox",
+  "origin": "League of Legends",
+  "description": "The Darkin Blade: three sweet-spot sword strikes, Infernal Chains, and World Ender. Automatic arena adaptation of Q, W, R.",
+  "author": "Ball Arena contributors (fan adaptation)",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#ec5659",
+    "style": "core",
+    "body": "assets/body.png"
+  },
+  "stats": {
+    "maxHp": 160,
+    "radius": 0.4,
+    "mass": 1.6,
+    "cruiseSpeed": 3.6,
+    "maxSpeed": 12,
+    "contactDamage": 6,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "q",
+      "type": "darkin-blade",
+      "name": "Q · The Darkin Blade",
+      "damage": 8,
+      "cooldown": 3.2,
+      "duration": 0.45,
+      "power": 0,
+      "range": 1.8,
+      "windup": 0.45,
+      "recastInterval": 0.35,
+      "sweetSpotMultiplier": 1.6,
+      "controlDuration": 0.22,
+      "icon": "assets/skill-q.png"
+    },
+    {
+      "id": "w",
+      "type": "infernal-chains",
+      "name": "W · Infernal Chains",
+      "damage": 6,
+      "cooldown": 6.5,
+      "duration": 1.5,
+      "power": 6,
+      "range": 3,
+      "zoneRadius": 1,
+      "slow": 0.25,
+      "icon": "assets/skill-w.png"
+    },
+    {
+      "id": "r",
+      "type": "world-ender",
+      "name": "R · World Ender",
+      "damage": 0,
+      "cooldown": 10,
+      "duration": 6,
+      "power": 0,
+      "range": 1,
+      "damageMultiplier": 1.25,
+      "speedMultiplier": 1.2,
+      "healMultiplier": 1.5,
+      "healRatio": 0.18,
+      "icon": "assets/skill-r.png"
+    }
+  ],
+  "assets": {
+    "license": "All rights reserved (Riot Games)",
+    "source": "User-provided Aatrox portrait; skill icons from Riot Data Dragon 16.21.1. Character/artwork belong to Riot Games. See docs/LEAGUE_CHARACTERS.md."
+  }
+}

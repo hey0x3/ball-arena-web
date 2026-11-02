@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "core:embertrail",
   "name": "Embertrail",
+  "origin": "Ball Arena",
   "description": "Leaves fire that burns only the opponent. Overlaps share one damage timer.",
   "author": "Ball Arena contributors",
   "version": "1.1.0",

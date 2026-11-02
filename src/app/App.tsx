@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CircleDot, Plus, Search, SlidersHorizontal, Play, Pause, RotateCcw, Video, Download, Upload, Moon, Sun, Volume2, VolumeX, Shuffle, Square, ArrowUpRight, X, Check, Copy, ChevronRight } from 'lucide-react';
 import { builtinMedia, catalog } from '../content/catalog';
 import { defaultSkill, type Character, type SavedCharacter } from '../content/schema';
+import { characterOrigin, characterOrigins, ORIGINAL_ORIGIN } from '../content/origins';
 import { downloadBlob, exportPack, imageData, importPack } from '../content/packs';
 import { loadCharacters, saveCharacter } from '../storage/characters';
 import { Simulation, STEP } from '../simulation/engine';
@@ -36,6 +37,7 @@ export default function App() {
   const [custom, setCustom] = useState<SavedCharacter[]>([]); const customRef = useRef(custom); customRef.current = custom;
   const [selected, setSelected] = useState<Character[]>([catalog[0], catalog[1]]); const selectedRef = useRef(selected); selectedRef.current = selected;
   const [slot, setSlot] = useState(0); const [query, setQuery] = useState(''); const [tab, setTab] = useState<'all' | 'custom'>('all');
+  const [origin, setOrigin] = useState<string | null>(null);
   const [editing, setEditing] = useState<SavedCharacter | null>(null); const [notice, setNotice] = useState('');
   const [error, setError] = useState(''); const [ready, setReady] = useState(false); const [sound, setSound] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false); const [pendingImport, setPendingImport] = useState<SavedCharacter | null>(null);
@@ -49,7 +51,10 @@ export default function App() {
   const [state, setState] = useState(() => snapshot(new Simulation(selected, settings)));
   const recording = recorderRef.current?.status === 'recording';
   const recordBusy = startingRecord || recording || recorderRef.current?.status === 'finalizing';
-  const all = [...catalog, ...custom.map(c => c.character)].filter(c => (tab !== 'custom' || !c.id.startsWith('core:')) && `${c.name} ${c.description}`.toLowerCase().includes(query.toLowerCase()));
+  const roster = tab === 'custom' ? custom.map(c => c.character) : [...catalog, ...custom.map(c => c.character)];
+  const origins = characterOrigins(roster);
+  const activeOrigin = origins.some(item => item.name === origin) ? origin : null;
+  const all = roster.filter(c => (!activeOrigin || characterOrigin(c) === activeOrigin) && `${c.name} ${c.description} ${characterOrigin(c)}`.toLowerCase().includes(query.toLowerCase()));
   const getEntry = (character: Character): SavedCharacter => customRef.current.find(c => c.character.id === character.id) || { character, media: builtinMedia[character.id] || {} };
   const updateMedia = () => {
     const media: Record<string, string> = {};
@@ -86,7 +91,7 @@ export default function App() {
         } else clock.current.accumulator = 0;
         if (sim.totalHits !== lastHits) { if (sim.totalHits > lastHits) audio.hit(); lastHits = sim.totalHits; }
         view.render(sim, settingsRef.current.theme, sim.phase === 'running' ? clock.current.accumulator / STEP : 1, settingsRef.current.showCharacterHealth);
-        portraitRef.current?.draw(view.canvas, sim, settingsRef.current.theme, f => view.artwork(f.definition));
+        portraitRef.current?.draw(view.canvas, sim, settingsRef.current.theme, f => view.artwork(f.definition), (f, skill) => view.skillArtwork(f.definition, skill));
         if (sim.phase === 'finished') {
           clock.current.finished += delta;
           if (clock.current.finished >= 1.2 && recorder.status === 'recording') recorder.stop();
@@ -140,7 +145,7 @@ export default function App() {
     if (recordBusy) return;
     const original = getEntry(selectedRef.current[slot]);
     const id = `community:${create ? 'new-ball' : original.character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${crypto.randomUUID().slice(0, 6)}`;
-    const entry = create ? { character: { ...structuredClone(catalog[0]), id, name: 'New Ball', author: 'You', description: 'A new contender enters the arena.', appearance: { color: '#65c9b5', style: 'core' as const }, skills: [defaultSkill('projectile')], assets: { license: 'MIT', source: 'Original custom procedural character.' } }, media: {} } : original.character.id.startsWith('core:') ? { character: { ...structuredClone(original.character), id, name: `${original.character.name} Custom`.slice(0, 32), author: 'You' }, media: { ...original.media } } : structuredClone(original);
+    const entry = create ? { character: { ...structuredClone(catalog[0]), id, origin: ORIGINAL_ORIGIN, name: 'New Ball', author: 'You', description: 'A new contender enters the arena.', appearance: { color: '#65c9b5', style: 'core' as const }, skills: [defaultSkill('projectile')], assets: { license: 'MIT', source: 'Original custom procedural character.' } }, media: {} } : original.character.id.startsWith('core:') ? { character: { ...structuredClone(original.character), id, name: `${original.character.name} Custom`.slice(0, 32), author: 'You' }, media: { ...original.media } } : structuredClone(original);
     simRef.current?.pause();
     if (simRef.current) setState(snapshot(simRef.current)); setEditing(entry); setOptionsOpen(false);
   };
@@ -174,7 +179,7 @@ export default function App() {
       settingsRef.current = { ...settingsRef.current, speed: 1 }; setSettings(settingsRef.current);
       const sim = reset(); viewRef.current.render(sim, settingsRef.current.theme, 1, settingsRef.current.showCharacterHealth);
       portraitRef.current = settingsRef.current.recordingFormat === 'portrait' ? new PortraitRecording() : null;
-      portraitRef.current?.draw(viewRef.current.canvas, sim, settingsRef.current.theme, f => viewRef.current?.artwork(f.definition));
+      portraitRef.current?.draw(viewRef.current.canvas, sim, settingsRef.current.theme, f => viewRef.current?.artwork(f.definition), (f, skill) => viewRef.current?.skillArtwork(f.definition, skill));
       recorderRef.current!.start(portraitRef.current?.canvas ?? viewRef.current.canvas, settingsRef.current.seed, audioRef.current?.stream);
       setRecordArmed(false); sim.start(); setState(snapshot(sim));
     } catch (e) { portraitRef.current = null; setError(e instanceof Error ? e.message : 'Recording could not start.'); }
@@ -194,7 +199,7 @@ export default function App() {
     const character = selected[index];
     return <ContenderHealth character={character} index={index} hp={state.hp[index] ?? character.stats.maxHp}
       skills={state.skills[index] || []} shield={state.shields[index] ?? 0} selected={slot === index} disabled={recordBusy}
-      image={character.appearance.body ? getEntry(character).media[character.appearance.body] : undefined} onSelect={() => setSlot(index)} />;
+      image={character.appearance.body ? getEntry(character).media[character.appearance.body] : undefined} media={getEntry(character).media} onSelect={() => setSlot(index)} />;
   };
 
   return <div className="workspace" data-record-tick={recordTick}>
@@ -216,22 +221,24 @@ export default function App() {
     <aside className="sidebar" aria-label="Character and simulation controls">
       <div className="sidebar-scroll">
       {editing ? <CharacterEditor key={editing.character.id} original={editing.character} media={editing.media} onSave={saveEntry} onCancel={() => setEditing(null)} /> : <>
-        <div className="sidebar-heading"><div><span className="eyebrow">THE CONTENDERS</span><h2>Choose your chaos.</h2></div><button className="icon-button boxed" aria-label="Create a new ball" disabled={recordBusy} onClick={() => edit(true)}><Plus size={19} /></button></div>
-        <div className="slot-selector">{selected.map((c, i) => <button key={i} className={slot === i ? 'active' : ''} onClick={() => setSlot(i)} disabled={recordBusy}><span className={`slot-marker ${i ? 'slot-b' : ''}`}>{i ? 'B' : 'A'}</span><span>{c.name}</span>{slot === i && <Check size={13} />}</button>)}</div>
-        <div className="roster-tabs"><button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All balls <span>{catalog.length + custom.length}</span></button><button className={tab === 'custom' ? 'active' : ''} onClick={() => setTab('custom')}>My creations <span>{custom.length}</span></button></div>
+        <div className="roster-tabs"><button className={tab === 'all' ? 'active' : ''} onClick={() => { setTab('all'); setOrigin(null); }}>All balls <span>{catalog.length + custom.length}</span></button><button className={tab === 'custom' ? 'active' : ''} onClick={() => { setTab('custom'); setOrigin(null); }}>My creations <span>{custom.length}</span></button></div>
         <label className="search-field"><Search size={15} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Find your next contender…" aria-label="Search characters" /><kbd>/</kbd></label>
+        <div className="origin-filters" role="group" aria-label="Character origins"><button aria-pressed={!activeOrigin} onClick={() => setOrigin(null)}>All origins <span>{roster.length}</span></button>{origins.map(item => <button key={item.name} aria-pressed={activeOrigin === item.name} onClick={() => setOrigin(item.name)}>{item.name}<span>{item.count}</span></button>)}</div>
         <div className="roster">{all.map(character => <button key={character.id} className={`roster-card ${selected[slot].id === character.id ? 'active' : ''}`} style={{ '--character-color': character.appearance.color } as React.CSSProperties} disabled={recordBusy} onClick={() => assign(character)} title={character.description} aria-label={`Assign ${character.name} to ${slot ? 'B' : 'A'}`}>
           <div className="roster-art"><BallIcon character={character} size={42} image={character.appearance.body ? getEntry(character).media[character.appearance.body] : undefined} />{selected.some(c => c.id === character.id) && <span className="assigned-mark">{selected.map((c, i) => c.id === character.id ? (i ? 'B' : 'A') : '').join('')}</span>}</div><strong>{character.name}</strong><span>{roleNames[character.appearance.style]}</span>
         </button>)}</div>
-        {!all.length && <div className="empty-state"><CircleDot size={26} /><p>{tab === 'custom' ? 'Your next creation starts here.' : 'No balls found. Try another name.'}</p>{tab === 'custom' && <button className="text-button" onClick={() => edit(true)}>Create your first ball <Plus size={13} /></button>}</div>}
+        {!all.length && <div className="empty-state"><CircleDot size={26} /><p>{tab === 'custom' && !custom.length ? 'Your next creation starts here.' : 'No balls found. Try another name or origin.'}</p>{tab === 'custom' && !custom.length && <button className="text-button" onClick={() => edit(true)}>Create your first ball <Plus size={13} /></button>}</div>}
         <div className="selected-details"><div className="details-header"><span className="section-caption">CONTENDER {slot ? 'B' : 'A'}</span><button className="text-button" disabled={recordBusy} onClick={() => edit()}><SlidersHorizontal size={13} /> Customize</button></div><h3>{selected[slot].name}</h3><p>{selected[slot].description}</p><div className="quick-stats"><div><span>HEALTH</span><strong>{selected[slot].stats.maxHp}</strong></div><div><span>SPEED</span><strong>{selected[slot].stats.cruiseSpeed.toFixed(1)}</strong></div><div><span>SKILLS</span><strong>{selected[slot].skills.length}<small> / 3</small></strong></div></div><div className="skill-pills">{selected[slot].skills.map(skill => <span key={skill.id}><span className="small-dot" style={{ background: selected[slot].appearance.color }} />{skill.name}</span>)}</div></div>
         <div className="create-card"><span className="create-glyph"><Plus size={18} /></span><div><strong>A ball of your own.</strong><p>New look. New skills. Your rules.</p></div><button aria-label="Add custom character" disabled={recordBusy} onClick={() => edit(true)}><ArrowUpRight size={18} /></button></div>
         <div className="pack-actions"><button disabled={recordBusy} onClick={() => importRef.current?.click()}><Upload size={14} /> Import pack</button><button disabled={recordBusy} onClick={exportSelected}><Download size={14} /> Export ball</button></div>
       </>}
       </div>
       <div className="simulation-controls">
+        {!editing && <section className="contender-setup" aria-label="Choose contenders"><div className="sidebar-heading"><div><span className="eyebrow">THE CONTENDERS</span><h2>Choose your chaos.</h2></div><button className="icon-button boxed" aria-label="Create a new ball" disabled={recordBusy} onClick={() => edit(true)}><Plus size={19} /></button></div>
+          <div className="slot-selector">{selected.map((c, i) => <button key={i} className={slot === i ? 'active' : ''} aria-pressed={slot === i} onClick={() => setSlot(i)} disabled={recordBusy}><span className={`slot-marker ${i ? 'slot-b' : ''}`}>{i ? 'B' : 'A'}</span><span>{c.name}</span>{slot === i && <Check size={13} />}</button>)}</div>
+        </section>}
         <div className="controls-heading"><span className="eyebrow">SIMULATION</span><div><button className={`icon-button ${sound ? 'on' : ''}`} aria-label={sound ? 'Mute arena' : 'Enable arena sound'} disabled={recordBusy} onClick={async () => { try { if (!sound) await audioRef.current?.enable(); else if (audioRef.current) audioRef.current.enabled = false; setSound(!sound); } catch (e) { setError(String(e)); } }}>{sound ? <Volume2 size={16} /> : <VolumeX size={16} />}</button><button className={`icon-button ${optionsOpen ? 'on' : ''}`} aria-label="Simulation settings" aria-expanded={optionsOpen} disabled={recordBusy} onClick={() => setOptionsOpen(!optionsOpen)}><SlidersHorizontal size={16} /></button></div></div>
-        {optionsOpen && <div className="simulation-options"><label className="check-field"><input type="checkbox" checked={settings.showCharacterHealth} onChange={e => settingsChanged({ showCharacterHealth: e.target.checked })} /><span>Show health on characters</span></label><label className="field">Seed<div className="seed-input"><input value={settings.seed} maxLength={64} onChange={e => settingsChanged({ seed: e.target.value })} onBlur={() => reset()} /><button className="icon-button" aria-label="Randomize seed" onClick={randomize}><Shuffle size={14} /></button></div></label><label className="field">Round time limit<select value={settings.timeout} onChange={e => settingsChanged({ timeout: Number(e.target.value) }, true)}>{[30, 60, 120, 180].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></label><label className="check-field"><input type="checkbox" checked={settings.shrink} onChange={e => settingsChanged({ shrink: e.target.checked }, true)} /><span>Sudden death after 2 minutes</span></label><button className="text-button" onClick={() => downloadBlob(new Blob([JSON.stringify({ version: 1, engine: '0.2.0', settings, characters: selected }, null, 2)], { type: 'application/json' }), 'arena-setup.json')}><Copy size={13} /> Save setup snapshot</button></div>}
+        {optionsOpen && <div className="simulation-options"><label className="check-field"><input type="checkbox" checked={settings.showCharacterHealth} onChange={e => settingsChanged({ showCharacterHealth: e.target.checked })} /><span>Show health on characters</span></label><label className="field">Seed<div className="seed-input"><input value={settings.seed} maxLength={64} onChange={e => settingsChanged({ seed: e.target.value })} onBlur={() => reset()} /><button className="icon-button" aria-label="Randomize seed" onClick={randomize}><Shuffle size={14} /></button></div></label><label className="field">Round time limit<select value={settings.timeout} onChange={e => settingsChanged({ timeout: Number(e.target.value) }, true)}>{[30, 60, 120, 180].map(n => <option key={n} value={n}>{n} seconds</option>)}</select></label><label className="check-field"><input type="checkbox" checked={settings.shrink} onChange={e => settingsChanged({ shrink: e.target.checked }, true)} /><span>Sudden death after 2 minutes</span></label><button className="text-button" onClick={() => downloadBlob(new Blob([JSON.stringify({ version: 1, engine: '0.3.0', settings, characters: selected }, null, 2)], { type: 'application/json' }), 'arena-setup.json')}><Copy size={13} /> Save setup snapshot</button></div>}
         <div className="playback-row"><button className="primary-button play-button" disabled={!ready || recordBusy || !!editing} onClick={() => void run()}>{state.phase === 'running' ? <Pause size={17} fill="currentColor" /> : <Play size={17} fill="currentColor" />}{state.phase === 'running' ? 'Pause' : 'Run'}</button><button className="icon-button restart-button" aria-label="Reset arena" title="Return to starting positions" disabled={!ready || recordBusy || !!editing} onClick={() => reset()}><RotateCcw size={17} /></button></div>
         <div className="speed-control"><span>Playback speed</span><div>{[.5, 1, 2, 4].map(speed => <button key={speed} className={settings.speed === speed ? 'active' : ''} disabled={recordBusy} onClick={() => settingsChanged({ speed })}>{speed}×</button>)}</div></div>
         <label className="record-format">Video format<select aria-label="Recording format" value={settings.recordingFormat} disabled={recordBusy || !!editing} onChange={e => settingsChanged({ recordingFormat: e.target.value as Settings['recordingFormat'] })}><option value="square">1:1 · Square</option><option value="portrait">9:16 · Short-form</option></select></label>

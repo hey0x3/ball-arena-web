@@ -1,9 +1,12 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import type { Fighter, Simulation, Point } from '../simulation/engine';
-import type { Character, MediaFiles } from '../content/schema';
+import type { Character, MediaFiles, Skill } from '../content/schema';
+import { fallbackSkillIcons, fallbackSkillMedia } from '../content/skill-icons';
 import { direction } from '../simulation/geometry';
 import { ARENA_CANVAS_SIZE, ARENA_PADDING, ARENA_SCALE, arenaPoint, artworkRotation, dartlingAim, fireOpacity, presentedPosition } from './presentation';
 import { drawSkillEffects } from './skill-effects';
+import { historyAt } from '../skills/champions';
+import { leagueLift } from './league-effects';
 import flameUrl from './assets/flame.png?url';
 
 const SIZE = ARENA_CANVAS_SIZE, PAD = ARENA_PADDING, SCALE = ARENA_SCALE, point = arenaPoint;
@@ -12,12 +15,17 @@ type BallView = { root: Container; art: Graphics; overlay: Graphics; weapon: Spr
 export class ArenaView {
   app = new Application();
   private floor = new Graphics();
+  private watermark = new Container();
+  private watermarkGlyph = new Graphics();
+  private watermarkText = new Text({ text: 'ball arena.', style: { fontFamily: 'Segoe UI, Arial, sans-serif', fontSize: 42, fontWeight: '700', fill: '#e5dfed', letterSpacing: -1 } });
   private effects = new Graphics();
   private skillUnder = new Graphics();
   private skillOver = new Graphics();
   private skillMask = new Graphics();
   private launchGuide = new Graphics();
   private fire = new Container();
+  private echoes = new Container();
+  private echoViews: { root: Container; image: Sprite; mask: Graphics }[] = [];
   private flames: Sprite[] = [];
   private flameTexture?: Texture;
   private boundary = new Graphics();
@@ -40,8 +48,14 @@ export class ArenaView {
     const flame = this.textures.get(flameUrl);
     // Match Flame_0's Unity sprite rectangle (bottom-left import coordinates).
     if (flame) this.flameTexture = new Texture({ source: flame.source, frame: new Rectangle(51, 2, 180, 236) });
-    this.app.stage.addChild(this.floor, this.effects, this.fire, this.skillUnder, this.boundary);
+    this.watermarkText.anchor.set(0, .5); this.watermarkText.position.set(66, 0);
+    this.watermark.addChild(this.watermarkGlyph, this.watermarkText);
+    this.watermark.pivot.set((66 + this.watermarkText.width) / 2, 0); this.watermark.position.set(360, 360);
+    this.app.stage.addChild(this.floor, this.watermark, this.effects, this.fire, this.echoes, this.skillUnder, this.boundary);
     for (let i = 0; i < 2; i++) {
+      const echoRoot = new Container(), echoImage = new Sprite(), echoMask = new Graphics();
+      echoImage.anchor.set(.5); echoRoot.addChild(echoImage, echoMask); echoImage.mask = echoMask; this.echoes.addChild(echoRoot);
+      this.echoViews.push({ root: echoRoot, image: echoImage, mask: echoMask });
       const root = new Container(), art = new Graphics(), overlay = new Graphics();
       const hp = new Text({ text: '100', style: { fontFamily: 'Arial, sans-serif', fontSize: 31, fontWeight: '700', fill: '#ffffff', stroke: { color: '#18202b', width: 3 } } });
       hp.anchor.set(.5);
@@ -60,8 +74,8 @@ export class ArenaView {
   }
   get canvas() { return this.app.canvas as HTMLCanvasElement; }
   async setMedia(media: MediaFiles) {
-    this.media = media;
-    await Promise.all(Object.values(media).map(data => {
+    this.media = { ...fallbackSkillMedia, ...media };
+    await Promise.all(Object.values(this.media).map(data => {
       if (this.textures.has(data)) return Promise.resolve();
       const pending = this.pendingTextures.get(data); if (pending) return pending;
       const task = new Promise<void>(resolve => {
@@ -73,6 +87,7 @@ export class ArenaView {
     }));
   }
   artwork(character: Character) { const path = character.appearance.body; return path ? this.images.get(this.media[character.id + '/' + path]) : undefined; }
+  skillArtwork(character: Character, skill: Skill) { return this.images.get(skill.icon && this.media[character.id + '/' + skill.icon] || fallbackSkillIcons[skill.type]); }
   private drawFloor(light: boolean) {
     const g = this.floor; g.clear();
     const plate = light ? 0xd7d0e0 : 0x30283d, ground = light ? 0xf0ecf5 : 0x1b1928;
@@ -81,14 +96,11 @@ export class ArenaView {
     g.rect(30, 30, 660, 660).fill(light ? 0xe2dbe9 : 0x211d30);
     g.rect(PAD, PAD, 640, 640).fill(ground);
     for (let x = 65; x < 680; x += 26) for (let y = 65; y < 680; y += 26) {
-      if (Math.hypot(x - 360, y - 360) > 120) g.circle(x, y, .65).fill({ color: engraving, alpha: .8 });
+      if (Math.abs(x - 360) > 180 || Math.abs(y - 360) > 45) g.circle(x, y, .65).fill({ color: engraving, alpha: .8 });
     }
-    [83, 96, 114].forEach((r, i) => g.circle(360, 360, r).stroke({ color: engraving, width: i === 2 ? .6 : 1, alpha: .7 }));
-    for (let i = 0; i < 8; i++) {
-      const a = i * Math.PI / 4;
-      g.moveTo(360 + Math.cos(a) * 100, 360 + Math.sin(a) * 100).lineTo(360 + Math.cos(a) * 110, 360 + Math.sin(a) * 110).stroke({ color: engraving, width: 1 });
-    }
-    g.poly([330, 365, 354, 335, 388, 356, 365, 387]).stroke({ color: engraving, width: 2 });
+    this.watermarkText.style.fill = light ? '#31273d' : '#e5dfed'; this.watermark.alpha = .14;
+    this.watermarkGlyph.clear().circle(20, -2, 18).stroke({ color: light ? 0x71528f : 0xb8a0e5, width: 2 })
+      .circle(36, 2, 18).fill(ground).stroke({ color: light ? 0x71528f : 0xb8a0e5, width: 2 }).circle(36, 2, 7).fill(light ? 0x71528f : 0xb8a0e5);
     for (let side = 0; side < 2; side++) for (let i = 1; i < 12; i++) {
       const x = side ? 696 : 24, y = 40 + i * 640 / 12;
       g.moveTo(x, y).lineTo(x + (side ? -1 : 1) * (i % 3 ? 4 : 8), y).stroke({ color: 0xa595bf, alpha: .45, width: 1 });
@@ -170,6 +182,16 @@ export class ArenaView {
     sim.fighters.forEach((fighter, i) => {
       this.balls[i].hp.visible = showCharacterHealth;
       this.drawBall(fighter, this.balls[i], sim, alpha);
+      const echo = this.echoViews[i], index = fighter.definition.skills.findIndex(s => s.type === 'chronobreak'), skill = fighter.definition.skills[index];
+      const path = fighter.definition.appearance.body, data = path ? this.media[fighter.definition.id + '/' + path] : undefined, texture = data ? this.textures.get(data) : undefined;
+      echo.root.visible = !!texture && !!skill && sim.elapsed >= (skill.rewindSeconds ?? 4) && sim.phase !== 'ready' && sim.phase !== 'finished';
+      if (echo.root.visible) {
+        const old = historyAt(fighter, sim.elapsed - (skill.rewindSeconds ?? 4)), limit = sim.half - fighter.definition.stats.radius;
+        const at = point({ x: Math.max(-limit, Math.min(limit, old.position.x)), y: Math.max(-limit, Math.min(limit, old.position.y)) }), radius = fighter.definition.stats.radius * SCALE;
+        echo.root.position.set(at.x, at.y); echo.root.alpha = .25 + Math.sin(sim.elapsed * 4) * .04;
+        echo.image.texture = texture!; echo.image.width = echo.image.height = radius * 2; echo.image.tint = 0x6effd8;
+        echo.mask.clear().circle(0, 0, radius - 2).fill(0xffffff);
+      }
     });
     const guide = this.launchGuide; guide.clear();
     if (sim.phase === 'ready') sim.fighters.forEach((f, index) => {
@@ -192,7 +214,7 @@ export class ArenaView {
     const weaponTexture = weaponData ? this.textures.get(weaponData) : undefined;
     const blade = f.definition.skills.find(s => s.type === 'rotating-blade');
     const g = view.art, overlay = view.overlay; g.clear(); overlay.clear();
-    view.root.position.set(p.x, p.y); view.root.alpha = f.hp <= 0 ? .35 : 1;
+    view.root.position.set(p.x, p.y - leagueLift(f)); view.root.alpha = f.hp <= 0 ? .35 : f.phasing ? .35 : 1;
     g.circle(3, 8, r + 2).fill({ color: 0x000000, alpha: .15 });
     if (!texture) {
       g.circle(0, 0, r).fill({ color: f.hitFlash > 0 ? 0xffffff : color, alpha: .8 });
@@ -221,7 +243,8 @@ export class ArenaView {
     view.image.visible = !!texture;
     if (texture) {
       view.image.texture = texture; const size = r * 2 * (appearance.bodyScale ?? 1);
-      view.image.width = view.image.height = size;
+      const aspect = appearance.bodyScale ? 1 : texture.width / texture.height;
+      view.image.width = size * Math.max(1, aspect); view.image.height = size * Math.max(1, 1 / aspect);
       view.image.anchor.set(appearance.pivot?.x ?? .5, 1 - (appearance.pivot?.y ?? .5));
       view.image.tint = f.hitFlash > 0 ? 0xffffff : numberColor(appearance.bodyTint ?? '#ffffff');
       view.image.rotation = aim ? artworkRotation(aim) : 0;

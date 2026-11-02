@@ -211,7 +211,7 @@ test('records a fixed 9:16 composition with health panels across a viewport resi
     const frame = async (time: number) => { video.currentTime = time; await new Promise<void>(resolve => video.onseeked = () => resolve()); ctx.drawImage(video, 0, 0); return canvas.toDataURL(); };
     const first = await frame(.2), later = await frame(4.65);
     const pixel = (x: number, y: number) => Array.from(ctx.getImageData(x, y, 1, 1).data);
-    return { width: video.videoWidth, height: video.videoHeight, first, later, topHealth: pixel(150, 212), bottomHealth: pixel(150, 1072) };
+    return { width: video.videoWidth, height: video.videoHeight, first, later, topHealth: pixel(150, 237), bottomHealth: pixel(150, 1115) };
   }, `data:video/webm;base64,${bytes.toString('base64')}`);
   expect(decoded.width).toBe(720); expect(decoded.height).toBe(1280); expect(decoded.first).not.toBe(decoded.later);
   // Both colored health bars remain in the portrait, even with ball numbers hidden.
@@ -225,7 +225,7 @@ test('records a fixed 9:16 composition with health panels across a viewport resi
 
 test('health panels show simulation-driven skill cooldowns, pause, and bounce requirements', async ({ page }) => {
   await page.goto('/'); await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
-  await expect(page.locator('.roster-card img')).toHaveCount(9);
+  await expect(page.locator('.roster-card img')).toHaveCount(15);
   await page.getByRole('button', { name: 'Assign Dartling to A', exact: true }).click();
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   const panel = page.locator('[data-contender="0"]');

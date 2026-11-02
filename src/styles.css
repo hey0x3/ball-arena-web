@@ -55,3 +55,60 @@
 .launch-grip-halo { fill: var(--arrow-color); opacity: .16; pointer-events: none; }
 .launch-grip { fill: var(--arrow-color); stroke: var(--bg); stroke-width: 3; pointer-events: none; }
 .arena-launch-arrows g:hover .launch-grip, .arena-launch-arrows g:focus-visible .launch-grip { stroke: #fff; stroke-width: 3; }
+
+/* Skill panels need readable width even when two full kits reduce arena height. */
+.arena-wrap > .contender { width: max(calc(100% - 26px), 350px); max-width: 500px; margin-inline: 0; left: 50%; translate: -50% 0; padding: 10px 14px; }
+.health-track { margin-block: 6px; }
+.live-skills { gap: 4px; margin-top: 6px; }
+.skill-live-heading { line-height: 1.2; }
+.skill-live-track { margin-block: 2px; }
+.skill-live-detail { line-height: 1.25; }
+
+.origin-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+.origin-filters button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--input); color: var(--muted); font-size: 9px; text-align: left; }
+.origin-filters button:hover { background: var(--raised); color: var(--text); }
+.origin-filters button[aria-pressed=true] { border-color: var(--soft); background: color-mix(in srgb, var(--accent) 10%, var(--input)); color: var(--text); }
+.origin-filters button span { color: var(--dim); font-size: 8px; }
+
+/* One compact health/skill strip leaves the square arena more vertical space. */
+.arena-wrap > .contender { gap: 12px; padding: 10px 13px; overflow: visible; }
+.contender-select { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; background: transparent; text-align: left; border-radius: 5px; }
+.contender-select:hover .contender-name strong { color: var(--accent); }
+.contender-select .ball-icon { width: 36px; height: 36px; }
+.contender-info { display: block; min-width: 0; overflow: visible; }
+.contender-name strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; font-weight: 600; }
+.contender-name > span { font-size: 11px; }
+.contender-letter { top: 4px; left: 5px; font-size: 7px; }
+.health-track { display: block; height: 4px; margin: 6px 0 0; }
+.shield-value { display: block; margin-top: 4px; font-size: 8px; }
+.contender-skills { margin-top: 4px; }
+.live-skills { display: flex; flex-shrink: 0; align-items: flex-start; gap: 6px; margin: 0; }
+.live-skill { width: 40px; position: relative; }
+.skill-tile { display: block; position: relative; width: 40px; height: 40px; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: #211e2b; }
+.skill-art { display: block; width: 100%; height: 100%; object-fit: cover; }
+.skill-cooldown-sweep { position: absolute; inset: 0; pointer-events: none; }
+.skill-countdown { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px #000, 1px 0 2px #000, -1px 0 2px #000; }
+.skill-shortcut { position: absolute; bottom: 0; left: 0; padding: 1px 3px; border-radius: 0 3px 0 0; background: #0b0b13d9; color: #eee7f7; font-size: 7px; font-weight: 700; }
+.skill-phase-dot { position: absolute; right: 3px; top: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--skill-color); box-shadow: 0 0 4px var(--skill-color); }
+.phase-ready .skill-tile, .phase-triggered .skill-tile, .phase-charging .skill-tile { border-color: var(--skill-color); }
+.phase-triggered .skill-tile { box-shadow: 0 0 9px color-mix(in srgb, var(--skill-color) 22%, transparent); }
+.phase-cooldown .skill-phase-dot { display: none; }
+.skill-mini-label { display: block; margin-top: 3px; font-size: 6px; line-height: 1; text-align: center; letter-spacing: .3px; color: var(--muted); white-space: nowrap; }
+.skill-live-track { margin: 3px 0 0; height: 2px; }
+.skill-tooltip { display: none; position: absolute; right: 0; bottom: calc(100% + 9px); width: 260px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); box-shadow: 0 8px 25px #0003; z-index: 10; pointer-events: none; }
+.live-skill[data-open=true] .skill-tooltip { display: block; }
+.contender-above .skill-tooltip { bottom: auto; top: calc(100% + 9px); }
+.contender:has(.live-skill[data-open=true]) { z-index: 5; }
+.skill-tooltip .skill-live-heading { display: block; line-height: 1.4; font-size: 11px; }
+.skill-tooltip .skill-live-heading strong { display: block; white-space: normal; font-weight: 600; }
+.skill-tooltip .skill-live-heading > span { display: block; margin-top: 3px; font-size: 10px; white-space: normal; }
+.skill-tooltip .skill-live-detail { font-size: 10px; line-height: 1.5; margin-top: 6px; white-space: normal; }
+.simulation-controls { max-height: calc(100% - 160px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.contender-setup { padding-bottom: 13px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.contender-setup .slot-selector { margin: 13px 0 0; }
+.contender-setup .sidebar-heading h2 { font-size: 18px; margin-top: 4px; }
+@media (max-height: 760px) {
+  .contender-setup { padding-bottom: 10px; margin-bottom: 9px; }
+  .contender-setup .slot-selector { margin-top: 10px; }
+  .origin-filters { margin-bottom: 12px; }
+}
