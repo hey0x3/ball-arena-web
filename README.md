@@ -27,7 +27,7 @@ npm run build
 npm run test:e2e
 ```
 
-Browser tests use installed Google Chrome locally. On CI they use Playwright Chromium (`npx playwright install --with-deps chromium`). The build produces static files in `dist/`. `npm run preview` serves that build for inspection.
+Browser tests use installed Google Chrome locally and on Windows CI (`npx playwright install chrome`). This exercises the native H.264/AAC encoders used for MP4 export. The build produces static files in `dist/`. `npm run preview` serves that build for inspection.
 
 ## Product
 
@@ -46,7 +46,7 @@ Browser tests use installed Google Chrome locally. On CI they use Playwright Chr
 - Each character has zero to three skills, including passive skills.
 - Visitors can create, import, export, and save custom characters locally.
 - Contributors and their AI agents can add characters and mechanics through pull requests.
-- **Record round** prepares the next recording and waits for **Run**, which starts both capture and the fresh round using the selected directions. The completed video downloads automatically. Choose **1:1 Square** (720×720 arena) or **9:16 Short-form** (720×1280 with the full arena and both health panels). On-character health follows the display toggle in both formats.
+- **Record round** prepares the next recording and waits for **Run**, which starts both capture and the fresh round using the selected directions. The completed **MP4** downloads automatically, encoded as H.264 at a fixed **60 fps**, with optional synchronized AAC arena sound. Choose **1:1 Square** (720×720 arena) or **9:16 Short-form** (720×1280 with the full arena and both health panels). On-character health follows the display toggle in both formats. Each frame is rendered and submitted in order; a busy machine can take longer to render the clip while its playback keeps the correct speed and frame cadence.
 
 ## Add your own ball
 
@@ -62,7 +62,7 @@ Your AI agent can do this too: use the [copyable agent task and contribution gui
 
 ## Stack
 
-TypeScript, React, Vite, PixiJS for rendering, Planck.js for physics, and browser recording APIs. The first version runs entirely in the browser and builds to static files.
+TypeScript, React, Vite, PixiJS for rendering, Planck.js for physics, and WebCodecs with Mediabunny for MP4 encoding/muxing. The first version runs entirely in the browser and builds to static files. No recording upload or server is required.
 
 ## Documentation
 
@@ -76,11 +76,15 @@ TypeScript, React, Vite, PixiJS for rendering, Planck.js for physics, and browse
 
 The nine base characters use the Unity project's approved sprites, base parameters, and audited activation/combat rules. See the parity reference for the source details and controlled checks. Planck and Unity can produce different trajectories; campaign progression and higher mastery upgrades are outside the base simulator. Recording has been verified in desktop Chrome; other browsers need their own checks.
 
+MP4 recording checks native H.264 support before starting and AAC support when sound is enabled. Unsupported browsers report the reason while the simulator remains usable. Rendering uses the video's fixed timeline, so physics and sound do not jump forward after a slow browser frame. The 240-second limit measures encoded clip time, with a 256 MiB encoded-data cap. The old real-time WebM capture path has been replaced.
+
 ## Repository and licensing
 
 This is independent of the enclosing Unity repository and runs from this checkout alone. Reference paths in the Unity notes are development context, not runtime dependencies.
 
 Code and documentation use the [MIT license](LICENSE). The original BallGame character sprites supplied by the project owner are copied unmodified, with source paths and hashes in the [Unity audit](docs/unity-audit.json). Other contributed media declares its own license and credits.
+
+The unmodified [Mediabunny](https://github.com/Vanilagy/mediabunny) dependency is distributed under [MPL-2.0](docs/licenses/mediabunny-MPL-2.0.txt).
 
 The supplied Aatrox/Ekko portraits, bundled Ahri/Caitlyn/Fizz portraits and League of Legends characters belong to Riot Games and are excluded from the MIT license. See [the fan-content attribution](docs/LEAGUE_CHARACTERS.md#artwork-and-attribution).
 

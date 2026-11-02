@@ -8,7 +8,7 @@ import { loadCharacters, saveCharacter } from '../storage/characters';
 import { Simulation, STEP } from '../simulation/engine';
 import { ArenaView } from '../rendering/arena';
 import { ArenaAudio } from '../rendering/audio';
-import { ArenaRecorder } from '../recording/recorder';
+import { ArenaRecorder, RECORDING_STEP } from '../recording/recorder';
 import { PortraitRecording } from '../recording/portrait';
 import { BallIcon } from './BallIcon';
 import { CharacterEditor } from './CharacterEditor';
@@ -69,7 +69,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    let alive = true, raf = 0, last = performance.now(), lastUi = 0, lastHits = 0;
+    let alive = true, raf = 0, last = performance.now(), lastUi = 0, lastHits = 0, nextRecordAt = 0;
     const view = new ArenaView(); viewRef.current = view;
     const audio = new ArenaAudio(); audioRef.current = audio;
     const recorder = new ArenaRecorder(() => {
@@ -80,18 +80,25 @@ export default function App() {
     void loadCharacters().then(entries => { if (alive) { customRef.current = entries; setCustom(entries); updateMedia(); } }).catch(e => { if (alive) setNotice(e.message); });
     void view.init(hostRef.current!).then(async () => {
       if (!alive) return; await updateMedia(); if (!alive) return; setReady(true); last = performance.now();
-      const frame = (now: number) => {
+      const frame = async (now: number) => {
         if (!alive) return;
-        const delta = Math.min(.1, (now - last) / 1000); last = now;
+        const recordingFrame = recorder.status === 'recording';
+        if (recordingFrame && now + .5 < nextRecordAt) { raf = requestAnimationFrame(frame); return; }
+        nextRecordAt = recordingFrame ? Math.max(nextRecordAt + RECORDING_STEP * 1000, now) : now;
+        const delta = recordingFrame ? RECORDING_STEP : Math.min(.1, (now - last) / 1000); last = now;
         const sim = simRef.current!;
         if (sim.phase === 'running') {
           clock.current.accumulator += delta * settingsRef.current.speed;
           let steps = 0;
-          while (clock.current.accumulator >= STEP && steps++ < 24 && sim.phase === 'running') { sim.step(); clock.current.accumulator -= STEP; }
+          while (clock.current.accumulator >= STEP && steps++ < 24 && sim.phase === 'running') {
+            const hits = sim.totalHits; sim.step(); clock.current.accumulator -= STEP;
+            if (recordingFrame && sim.totalHits > hits) recorder.hit(Math.max(0, sim.elapsed - STEP));
+          }
         } else clock.current.accumulator = 0;
         if (sim.totalHits !== lastHits) { if (sim.totalHits > lastHits) audio.hit(); lastHits = sim.totalHits; }
         view.render(sim, settingsRef.current.theme, sim.phase === 'running' ? clock.current.accumulator / STEP : 1, settingsRef.current.showCharacterHealth);
         portraitRef.current?.draw(view.canvas, sim, settingsRef.current.theme, f => view.artwork(f.definition), (f, skill) => view.skillArtwork(f.definition, skill));
+        if (recordingFrame) { await recorder.captureFrame(); last = performance.now(); if (!alive) return; }
         if (sim.phase === 'finished') {
           clock.current.finished += delta;
           if (clock.current.finished >= 1.2 && recorder.status === 'recording') recorder.stop();
@@ -104,7 +111,7 @@ export default function App() {
     const hidden = () => {
       if (document.hidden) {
         simRef.current?.pause(); clock.current.accumulator = 0;
-        if (recorder.status === 'recording') recorder.stop('Interrupted: tab hidden');
+        if (recorder.status === 'recording' || recorder.status === 'preparing') recorder.stop('Interrupted: tab hidden');
         if (simRef.current) setState(snapshot(simRef.current));
       }
     };
@@ -173,6 +180,7 @@ export default function App() {
     }
     setError('');
     setStartingRecord(true);
+    setOptionsOpen(false);
     try {
       if (!viewRef.current || !ready) throw new Error('The arena is still loading.');
       if (sound) await audioRef.current?.enable();
@@ -180,7 +188,7 @@ export default function App() {
       const sim = reset(); viewRef.current.render(sim, settingsRef.current.theme, 1, settingsRef.current.showCharacterHealth);
       portraitRef.current = settingsRef.current.recordingFormat === 'portrait' ? new PortraitRecording() : null;
       portraitRef.current?.draw(viewRef.current.canvas, sim, settingsRef.current.theme, f => viewRef.current?.artwork(f.definition), (f, skill) => viewRef.current?.skillArtwork(f.definition, skill));
-      recorderRef.current!.start(portraitRef.current?.canvas ?? viewRef.current.canvas, settingsRef.current.seed, audioRef.current?.stream);
+      await recorderRef.current!.start(portraitRef.current?.canvas ?? viewRef.current.canvas, settingsRef.current.seed, sound);
       setRecordArmed(false); sim.start(); setState(snapshot(sim));
     } catch (e) { portraitRef.current = null; setError(e instanceof Error ? e.message : 'Recording could not start.'); }
     finally { setStartingRecord(false); }
@@ -202,7 +210,7 @@ export default function App() {
       image={character.appearance.body ? getEntry(character).media[character.appearance.body] : undefined} media={getEntry(character).media} onSelect={() => setSlot(index)} />;
   };
 
-  return <div className="workspace" data-record-tick={recordTick}>
+  return <div className="workspace" data-record-tick={recordTick} data-record-frames={recorderRef.current?.frames ?? 0}>
     <header className="topbar">
       <div className="brand"><span className="brand-symbol"><i /><i /></span><span>ball arena<span className="brand-dot">.</span></span><span className="version-tag">LAB 01</span></div>
       <div className="topbar-right"><span className="topbar-note">A simulation playground</span><span className="topbar-divider" /><button className="icon-button" aria-label={settings.theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} onClick={() => settingsChanged({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}>{settings.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button></div>
@@ -243,7 +251,7 @@ export default function App() {
         <div className="speed-control"><span>Playback speed</span><div>{[.5, 1, 2, 4].map(speed => <button key={speed} className={settings.speed === speed ? 'active' : ''} disabled={recordBusy} onClick={() => settingsChanged({ speed })}>{speed}×</button>)}</div></div>
         <label className="record-format">Video format<select aria-label="Recording format" value={settings.recordingFormat} disabled={recordBusy || !!editing} onChange={e => settingsChanged({ recordingFormat: e.target.value as Settings['recordingFormat'] })}><option value="square">1:1 · Square</option><option value="portrait">9:16 · Short-form</option></select></label>
         {recording ? <button className="record-button recording" onClick={() => recorderRef.current?.stop('Stopped early')}><Square size={14} fill="currentColor" /><span>Stop recording</span><span>{time(recorderRef.current?.seconds || 0)}</span></button> : <button className={`record-button ${recordArmed ? 'armed' : ''}`} aria-label={recordBusy ? 'Finalizing recording' : recordArmed ? 'Cancel recording' : 'Record round'} aria-pressed={recordArmed} disabled={!ready || recordBusy || !!editing} onClick={() => { if (!recordArmed) reset(); setRecordArmed(!recordArmed); }}><Video size={17} /><span>{recordBusy ? 'Preparing video…' : recordArmed ? 'Cancel recording' : 'Record round'}</span><span className="record-quality" aria-hidden="true">{settings.recordingFormat === 'portrait' ? '9:16' : '1:1'}</span></button>}
-        <div className="record-note">{recordArmed ? 'Ready to record · press Run' : recorderRef.current?.status === 'ready' ? <button className="text-button" onClick={() => recorderRef.current?.download()}><Download size={12} /> Download last recording{recorderRef.current.reason ? ` · ${recorderRef.current.reason}` : ''}</button> : recorderRef.current?.status === 'failed' ? <span role="alert">{recorderRef.current.reason}</span> : recording ? 'Recording at 1× · auto-saves at round end' : settings.recordingFormat === 'portrait' ? '720 × 1280 · full arena + both health panels' : '720 × 720 · arena only'}</div>
+        <div className="record-note">{recordArmed ? 'Ready to record MP4 · press Run' : recorderRef.current?.status === 'ready' ? <button className="text-button" onClick={() => recorderRef.current?.download()}><Download size={12} /> Download last recording{recorderRef.current.reason ? ` · ${recorderRef.current.reason}` : ''}</button> : recorderRef.current?.status === 'failed' ? <span role="alert">{recorderRef.current.reason}</span> : recording ? 'MP4 · 60 fps · auto-saves at round end' : settings.recordingFormat === 'portrait' ? 'MP4 · 720 × 1280 · arena + health panels' : 'MP4 · 720 × 720 · arena only'}</div>
       </div>
       <div className="sidebar-footer"><span className="small-dot" /><span>Open source. Open possibilities.</span><CircleDot size={13} /></div>
     </aside>

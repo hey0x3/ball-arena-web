@@ -56,7 +56,7 @@ Do not deploy or publish it.
 
 ## Developer commands
 
-Use `npm run dev`, `npm run build`, `npm run typecheck`, `npm run validate:content`, `npm test`, and `npm run test:e2e`. Browser tests use installed Google Chrome locally and Playwright Chromium in CI.
+Use `npm run dev`, `npm run build`, `npm run typecheck`, `npm run validate:content`, `npm test`, and `npm run test:e2e`. Browser tests use installed Google Chrome locally and on Windows CI, including its H.264/AAC codecs. MP4 tests check consecutive decoded frames and exact timestamps under artificial rendering stalls, in addition to downloads and audio.
 
 The included CI validates content and the three-skill limit, typechecks, runs simulation and browser checks, and builds the static app. Recording tests decode actual downloaded video and inspect changing frames. CI does not deploy.
 

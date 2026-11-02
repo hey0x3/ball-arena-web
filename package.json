@@ -28,7 +28,8 @@
     "planck": "1.5.1",
     "zod": "4.6.7",
     "fflate": "0.8.3",
-    "lucide-react": "1.65.0"
+    "lucide-react": "1.65.0",
+    "mediabunny": "1.65.0"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

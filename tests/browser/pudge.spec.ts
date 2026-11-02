@@ -56,27 +56,17 @@ test('all three Pudge skills and portrait HUD survive encoding and video playbac
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/'); await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
   const result = await page.evaluate(async () => {
-    const paths = ['/src/rendering/arena.ts', '/src/simulation/engine.ts', '/src/content/catalog.ts', '/src/recording/portrait.ts'];
-    const [{ ArenaView }, { Simulation }, { catalog, builtinMedia }, { PortraitRecording }] = await Promise.all(paths.map(path => import(path)));
+    const paths = ['/src/rendering/arena.ts', '/src/simulation/engine.ts', '/src/content/catalog.ts', '/src/recording/portrait.ts', '/tests/browser/mp4-fixture.ts'];
+    const [{ ArenaView }, { Simulation }, { catalog, builtinMedia }, { PortraitRecording }, { recordFixture, decodeFixture }] = await Promise.all(paths.map(path => import(path)));
     const host = document.createElement('div'); document.body.appendChild(host); const view = new ArenaView(); await view.init(host);
     const media: Record<string, string> = {}; for (const [id, files] of Object.entries(builtinMedia)) for (const [path, url] of Object.entries(files as Record<string, string>)) media[id + '/' + path] = url; await view.setMedia(media);
     const characters = ['pudge', 'aatrox'].map(name => structuredClone(catalog.find((c: { id: string }) => c.id === 'core:' + name))); characters[1].skills = []; characters[1].stats.contactDamage = 0;
     const sim = new Simulation(characters, { seed: 'pudge-recording', shrink: false, timeout: 60 }), portrait = new PortraitRecording(); sim.start();
     sim.fighters.forEach((f: { body: { setPosition: (p: { x: number; y: number }) => void; setLinearVelocity: (p: { x: number; y: number }) => void }; previous: { x: number; y: number } }, i: number) => { const at = { x: i ? 1.4 : -1.4, y: 0 }; f.body.setPosition(at); f.previous = { ...at }; f.body.setLinearVelocity({ x: 0, y: 0 }); sim.hold(f, 60); });
-    const stream: MediaStream = portrait.canvas.captureStream(30), recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' }), chunks: Blob[] = [];
-    recorder.ondataavailable = event => chunks.push(event.data); recorder.start(); const started = performance.now(); let captureAt = 0;
-    for (let tick = 0; tick < 560; tick++) {
-      sim.step(); view.render(sim, 'dark', 1, false); portrait.draw(view.canvas, sim, 'dark', (f: { definition: unknown }) => view.artwork(f.definition), (f: { definition: unknown }, skill: unknown) => view.skillArtwork(f.definition, skill));
-      if (tick === 490) { captureAt = (performance.now() - started) / 1000 + .06; await new Promise(resolve => setTimeout(resolve, 140)); }
-      await new Promise(requestAnimationFrame);
-    }
-    await new Promise<void>(resolve => { recorder.onstop = () => resolve(); recorder.stop(); }); stream.getTracks().forEach(track => track.stop());
-    const blob = new Blob(chunks, { type: 'video/webm' }), url = URL.createObjectURL(blob), video = document.createElement('video'); video.muted = true; video.src = url;
-    await new Promise<void>((resolve, reject) => { video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error('Pudge recording failed to decode')); });
-    video.currentTime = captureAt; await new Promise<void>(resolve => { video.onseeked = () => resolve(); });
-    const sample = document.createElement('canvas'); sample.width = video.videoWidth; sample.height = video.videoHeight; sample.getContext('2d')!.drawImage(video, 0, 0);
-    const frame = sample.toDataURL(), activations = sim.fighters[0].skills.map((s: { activations: number }) => s.activations);
-    const width = video.videoWidth, height = video.videoHeight; URL.revokeObjectURL(url); view.dispose(); host.remove(); return { frame, width, height, bytes: blob.size, activations };
+    for (let tick = 0; tick < 490; tick++) sim.step();
+    const blob = await recordFixture(view, sim, portrait), { frame, width, height, bytes } = await decodeFixture(blob);
+    const activations = sim.fighters[0].skills.map((s: { activations: number }) => s.activations);
+    view.dispose(); host.remove(); return { frame, width, height, bytes, activations };
   });
   expect(result.width).toBe(720); expect(result.height).toBe(1280); expect(result.bytes).toBeGreaterThan(10000); for (const count of result.activations) expect(count).toBeGreaterThan(0);
   writeFileSync('test-results/pudge-portrait.png', Buffer.from(result.frame.split(',')[1], 'base64')); expect(errors).toEqual([]);

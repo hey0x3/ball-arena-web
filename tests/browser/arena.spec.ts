@@ -12,19 +12,21 @@ test('renders an advancing arena and keeps the desktop workspace in narrow windo
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   // Wait for the paused presentation to render before comparing frozen frames.
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  let first = await canvas.screenshot();
+  // Compare backing-canvas pixels directly; compositor screenshots can take seconds on CI.
+  const pixels = () => canvas.evaluate(element => (element as HTMLCanvasElement).toDataURL());
+  let first = await pixels();
   let stableFrames = 0;
   await expect.poll(async () => {
-    const frame = await canvas.screenshot();
-    stableFrames = frame.equals(first) ? stableFrames + 1 : 0;
+    const frame = await pixels();
+    stableFrames = frame === first ? stableFrames + 1 : 0;
     first = frame;
     return stableFrames;
   }, { intervals: [100, 150, 200], timeout: 5000 }).toBeGreaterThanOrEqual(2);
   await page.waitForTimeout(250);
-  expect((await canvas.screenshot()).equals(first)).toBe(true);
+  expect(await pixels() === first, 'Paused canvas pixels must remain frozen').toBe(true);
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await page.waitForTimeout(400);
-  expect((await canvas.screenshot()).equals(first)).toBe(false);
+  await expect.poll(async () => await pixels() !== first).toBe(true);
   await page.getByRole('button', { name: 'Assign Prism to A', exact: true }).click();
   await expect(page.locator('[data-contender="0"] .contender-name')).toContainText('Prism');
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
@@ -107,25 +109,25 @@ test('records advancing 720px frames with sound and downloads a playable arena v
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByRole('button', { name: /Stop recording/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Create a new ball', exact: true })).toBeDisabled();
-  await page.waitForTimeout(2200);
+  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(120);
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: /Stop recording/ }).click();
-  const download = await downloadPromise; const path = await download.path(); expect(path).toBeTruthy();
+  const download = await downloadPromise; expect(download.suggestedFilename()).toMatch(/\.mp4$/); const path = await download.path(); expect(path).toBeTruthy();
   const bytes = readFileSync(path!); expect(bytes.length).toBeGreaterThan(5000);
   // Decode the actual exported file, inspect two frames, and verify an audio track.
-  const videoData = `data:video/webm;base64,${bytes.toString('base64')}`;
+  const videoData = `data:video/mp4;base64,${bytes.toString('base64')}`;
   const result = await page.evaluate(async data => {
     const video = document.createElement('video'); video.muted = true; video.src = data;
     await new Promise<void>((resolve, reject) => { video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error('Downloaded video did not decode')); });
     const canvas = document.createElement('canvas'); canvas.width = canvas.height = 720; const ctx = canvas.getContext('2d')!;
-    const frame = async (t: number) => { video.currentTime = t; await new Promise<void>(resolve => { video.onseeked = () => resolve(); }); ctx.drawImage(video, 0, 0); return canvas.toDataURL(); };
+    const frame = async (t: number) => { video.currentTime = t; await new Promise<void>(resolve => { video.onseeked = () => resolve(); }); await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))); ctx.drawImage(video, 0, 0); return canvas.toDataURL(); };
     const first = await frame(.2), later = await frame(1.2);
     return { width: video.videoWidth, height: video.videoHeight, first, later };
   }, videoData);
-  expect(result.width).toBe(720); expect(result.height).toBe(720); expect(result.first).not.toBe(result.later);
+  expect(result.width).toBe(720); expect(result.height).toBe(720); expect(result.first !== result.later, 'Decoded frames at 0.2s and 1.2s must show different arena positions').toBe(true);
   const png = PNG(Buffer.from(result.later.split(',')[1], 'base64'));
   expect(png.uniqueColors).toBeGreaterThan(100);
-  // EBML contains the Opus codec identifier when the synthesized audio track is muxed.
-  expect(bytes.includes(Buffer.from('A_OPUS'))).toBe(true);
+  // MP4 contains an AAC sample entry when the synchronized soundtrack is enabled.
+  expect(bytes.includes(Buffer.from('mp4a'))).toBe(true);
   await page.getByRole('button', { name: 'Switch to light theme' }).click();
   await page.getByRole('button', { name: 'Switch to dark theme' }).click();
   await page.getByRole('button', { name: 'Reset arena' }).click();
@@ -142,7 +144,7 @@ test('automatically downloads a silent completed round with a result tail', asyn
   await page.getByRole('button', { name: 'Record round', exact: true }).click();
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   const download = await downloadPromise; const bytes = readFileSync((await download.path())!);
-  expect(bytes.length).toBeGreaterThan(5000); expect(bytes.includes(Buffer.from('A_OPUS'))).toBe(false);
+  expect(bytes.length).toBeGreaterThan(5000); expect(bytes.includes(Buffer.from('mp4a'))).toBe(false);
   await expect(page.getByRole('button', { name: 'Download last recording', exact: true })).toBeVisible();
   await expect(page.locator('.simulation-status')).toHaveText('Round complete');
 });
@@ -198,8 +200,8 @@ test('records a fixed 9:16 composition with health panels across a viewport resi
   await page.getByRole('button', { name: 'Record round', exact: true }).click();
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Recording format', exact: true })).toBeDisabled();
-  await page.waitForTimeout(4200);
-  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(1700);
+  await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(250);
+  await page.setViewportSize({ width: 390, height: 844 }); await expect.poll(async () => Number(await page.locator('.workspace').getAttribute('data-record-frames')), { timeout: 30000 }).toBeGreaterThan(330);
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /Stop recording/ }).click();
   const download = await downloadPromise; expect(download.suggestedFilename()).toContain('720x1280');
@@ -208,12 +210,12 @@ test('records a fixed 9:16 composition with health panels across a viewport resi
     const video = document.createElement('video'); video.muted = true; video.src = data;
     await new Promise<void>((resolve, reject) => { video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error('Portrait video did not decode')); });
     const canvas = document.createElement('canvas'); canvas.width = 720; canvas.height = 1280; const ctx = canvas.getContext('2d')!;
-    const frame = async (time: number) => { video.currentTime = time; await new Promise<void>(resolve => video.onseeked = () => resolve()); ctx.drawImage(video, 0, 0); return canvas.toDataURL(); };
+    const frame = async (time: number) => { video.currentTime = time; await new Promise<void>(resolve => video.onseeked = () => resolve()); await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))); ctx.drawImage(video, 0, 0); return canvas.toDataURL(); };
     const first = await frame(.2), later = await frame(4.65);
     const pixel = (x: number, y: number) => Array.from(ctx.getImageData(x, y, 1, 1).data);
     return { width: video.videoWidth, height: video.videoHeight, first, later, topHealth: pixel(150, 237), bottomHealth: pixel(150, 1115) };
-  }, `data:video/webm;base64,${bytes.toString('base64')}`);
-  expect(decoded.width).toBe(720); expect(decoded.height).toBe(1280); expect(decoded.first).not.toBe(decoded.later);
+  }, `data:video/mp4;base64,${bytes.toString('base64')}`);
+  expect(decoded.width).toBe(720); expect(decoded.height).toBe(1280); expect(decoded.first !== decoded.later, 'Portrait playback must advance through the recorded round').toBe(true);
   // Both colored health bars remain in the portrait, even with ball numbers hidden.
   expect(decoded.topHealth[0]).toBeGreaterThan(130); expect(decoded.topHealth[1]).toBeGreaterThan(80);
   expect(decoded.bottomHealth[1]).toBeGreaterThan(130); expect(decoded.bottomHealth[2]).toBeGreaterThan(100);

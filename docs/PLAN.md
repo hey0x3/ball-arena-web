@@ -53,7 +53,7 @@ Editing is available before a round or while paused. Applying changes creates a 
 | Arena rendering | PixiJS, production WebGL renderer | Sprites, rails, weapons, text, particles, one canvas |
 | Physics | Planck.js | TypeScript/JavaScript Box2D-style bodies, contacts, and impulses |
 | Validation | Zod plus generated JSON Schema | One contract for editing, imports, contributions, and agent tooling |
-| Recording | Canvas captureStream and MediaRecorder | Local arena-only video and download |
+| Recording | WebCodecs + Mediabunny | Frame-accurate local H.264/AAC MP4 export and download |
 | Local storage | IndexedDB for packs/assets; small settings in localStorage | Keep visitor characters and presets without accounts |
 | Verification | Vitest and Playwright | Simulation rules, content validation, browser integration |
 
@@ -157,12 +157,12 @@ Publish schema versions, migration errors, a complete example pack, contribution
 **Record round** prepares capture and returns the arena to ready. **Run** starts both capture and the fresh round with the chosen directions. Include a short result tail and finalize the video. Request an automatic download and retain **Download last recording** if browser download handling requires another click. A secondary Stop button ends a clip early.
 
 - Capture the arena canvas directly, including HP, weapons, and visual effects. Exclude the sidebar, cursor, and browser interface.
-- Default to a fixed 720×720 recording at 30 fps; offer 1080×1080 after performance validation. Maintain a fixed capture size while recording so viewport resize cannot corrupt it.
+- Updated 2 November: export a fixed 720×720 square or 720×1280 portrait MP4 at 60 fps. Maintain fixed capture dimensions while recording so viewport resize cannot corrupt it.
 - Prove WebGL capture early with animated frames. Use a dedicated capture surface if the chosen rendering path otherwise produces blank frames or cannot retain a fixed size.
-- Detect MediaRecorder support and test MIME types with `isTypeSupported`. Prefer a supported WebM or MP4 format and use the actual recorder MIME type for the extension. Universal MP4 conversion is later work.
-- Optional arena audio is routed from Web Audio into the recording stream. Canvas capture by itself contains video only. Sound off must still produce a valid silent video; no microphone is needed.
+- Check WebCodecs H.264 encodability at the chosen dimensions. Use explicit frame timestamps and awaited canvas submissions to write a real MP4 through Mediabunny. Advance the simulation on the output timeline so slow render/encode frames never skip video content. Unsupported environments receive a clear error; do not rename other containers to MP4.
+- Generate optional arena tones on the same fixed sample timeline and encode them as AAC, checking encoder support before starting. Sound off produces a silent MP4; no microphone is needed.
 - Use recording states: idle, preparing, recording, finalizing, ready, and failed/interrupted. Handle encoder errors and release tracks, chunks, and object URLs appropriately.
-- Default recording playback is 1x. Show duration and file-size progress; initially cap a recording at 240 wall-clock seconds or 256 MiB of retained chunks, whichever comes first. This is bounded in-memory capture, not unlimited disk streaming.
+- Default recording playback is 1x. Show clip duration and file-size progress; cap a recording at 240 encoded seconds or 256 MiB of encoded data, whichever comes first. A busy machine may take longer to render while clip playback retains 60 fps. This is bounded in-memory encoding, not unlimited disk streaming.
 - Make round timeout configurable, initially 180 simulation seconds. A recording cap can end a slow run early, with the reason shown. Each recording captures one round.
 - No upload, screen-sharing picker, browser-tab capture, or server-side rendering is required. Unsupported recording environments get a clear explanation while simulation remains usable.
 
@@ -180,7 +180,7 @@ Test playback and downloads in supported desktop Chrome, Edge, and Firefox. Chec
 
 Use unit checks for meaningful rules: cooldown timing, damage batching, simultaneous KO, speed changes, restart cleanup, skill limits, and import validation. Browser checks cover roster assignment, customization, persistence, import/export, layout, and recording lifecycle. Inspect actual video playback; a nonempty Blob alone is insufficient proof.
 
-Initial performance target: smooth 60 fps display and 30 fps recording for a 1v1 round on the chosen reference desktop, with bounded projectile/effect counts and no accumulating resources after repeated restarts. Benchmark rather than promise identical performance on every device.
+Initial performance target: smooth 60 fps display and a complete 60 fps recording timeline for a 1v1 round on the chosen reference desktop, with bounded projectile/effect counts and no accumulating resources after repeated restarts. Export may take longer on a busy device; benchmark rendering throughput rather than promise identical performance on every device.
 
 Later additions: larger arenas, multiple combatants/teams, community gallery, URL-shareable presets, tournaments, alternate arena gimmicks, advanced video export, and a hosted agent publication API. These must preserve the three-skill contract.
 
@@ -200,4 +200,4 @@ Checked 30 October 2026. These support the proposed implementation choices, not 
 - [Planck.js overview](https://piqnt.dev/planck.js/docs/index.html) and [simulation stepping](https://piqnt.dev/planck.js/docs/world/simulation.html)
 - [Vite static deployment and GitHub Pages base paths](https://vite.dev/guide/static-deploy)
 - [Canvas captureStream and origin-clean requirements](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/captureStream)
-- [MediaRecorder lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) and [format support detection](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/isTypeSupported_static)
+- [WebCodecs specification](https://www.w3.org/TR/webcodecs/) and [Mediabunny output and muxing](https://mediabunny.dev/guide/writing-media-files)

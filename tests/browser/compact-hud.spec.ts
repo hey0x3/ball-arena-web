@@ -32,7 +32,10 @@ test('custom skill icons survive body replacement, storage, export and ZIP impor
   const replacement = readFileSync('content/characters/fizz/assets/body.png'), skill = readFileSync('content/characters/caitlyn/assets/skill-q.png');
   await page.locator('.character-editor > .upload-art input').setInputFiles({ name: 'body.png', mimeType: 'image/png', buffer: replacement });
   await page.getByLabel('Skill 1 icon', { exact: true }).setInputFiles({ name: 'skill.png', mimeType: 'image/png', buffer: skill });
-  await page.getByRole('button', { name: 'Save & use ball', exact: true }).click(); await expect(page.getByRole('status')).toContainText('Icon Keeper saved');
+  await page.getByRole('button', { name: 'Save & use ball', exact: true }).click();
+  await expect(page.locator('.character-editor')).toHaveCount(0);
+  await expect(page.locator('[data-contender="0"] .contender-name strong')).toHaveText('Icon Keeper');
+  await expect(page.getByRole('button', { name: 'My creations 1', exact: true })).toBeVisible();
   await page.reload(); await page.getByRole('button', { name: 'My creations 1', exact: true }).click(); await page.getByRole('button', { name: 'Assign Icon Keeper to A', exact: true }).click();
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export ball', exact: true }).click(); const path = (await (await downloadPromise).path())!, files = unzipSync(readFileSync(path)), character = JSON.parse(strFromU8(files['character.json']));
   expect(Buffer.from(files[character.appearance.body]).equals(replacement)).toBe(true); expect(Buffer.from(files[character.skills[0].icon]).equals(skill)).toBe(true);
@@ -44,24 +47,17 @@ test('custom skill icons survive body replacement, storage, export and ZIP impor
 test('square and portrait videos contain the center watermark and compact icon HUD', async ({ page }) => {
   await page.goto('/'); await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
   const results = await page.evaluate(async () => {
-    const paths = ['/src/rendering/arena.ts', '/src/simulation/engine.ts', '/src/content/catalog.ts', '/src/recording/portrait.ts'];
-    const [{ ArenaView }, { Simulation }, { catalog, builtinMedia }, { PortraitRecording }] = await Promise.all(paths.map(path => import(path)));
+    const paths = ['/src/rendering/arena.ts', '/src/simulation/engine.ts', '/src/content/catalog.ts', '/src/recording/portrait.ts', '/tests/browser/mp4-fixture.ts'];
+    const [{ ArenaView }, { Simulation }, { catalog, builtinMedia }, { PortraitRecording }, { recordFixture, decodeFixture }] = await Promise.all(paths.map(path => import(path)));
     const host = document.createElement('div'); document.body.appendChild(host); const view = new ArenaView(); await view.init(host);
     const media: Record<string, string> = {}; for (const [id, files] of Object.entries(builtinMedia)) for (const [path, url] of Object.entries(files as Record<string, string>)) media[id + '/' + path] = url; await view.setMedia(media);
     const characters = ['ahri', 'fizz'].map(name => structuredClone(catalog.find((c: { id: string }) => c.id === 'core:' + name))), sim = new Simulation(characters, { seed: 'compact-capture', shrink: false, timeout: 60 }), portrait = new PortraitRecording(); sim.start(); sim.pause();
-    const draw = () => { view.render(sim, 'dark', 1, false); portrait.draw(view.canvas, sim, 'dark', (f: { definition: unknown }) => view.artwork(f.definition), (f: { definition: unknown }, skill: unknown) => view.skillArtwork(f.definition, skill)); }; draw();
-    const streams: MediaStream[] = [view.canvas.captureStream(30), portrait.canvas.captureStream(30)], chunks: Blob[][] = [[], []];
-    const recorders = streams.map((stream, index) => { const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 5_000_000 }); recorder.ondataavailable = event => chunks[index].push(event.data); recorder.start(); return recorder; });
-    for (let i = 0; i < 8; i++) { draw(); await new Promise(resolve => setTimeout(resolve, 30)); }
-    sim.start(); for (let i = 0; i < 60; i++) { sim.step(); draw(); await new Promise(resolve => setTimeout(resolve, 25)); }
-    await Promise.all(recorders.map(recorder => new Promise<void>(resolve => { recorder.onstop = () => resolve(); recorder.stop(); }))); streams.forEach(stream => stream.getTracks().forEach(track => track.stop()));
     const results: { width: number; height: number; ink: number; frame: string }[] = [];
-    for (const [index, parts] of chunks.entries()) {
-      const blob = new Blob(parts, { type: 'video/webm' }), url = URL.createObjectURL(blob), video = document.createElement('video'); video.src = url; video.muted = true;
-      await new Promise<void>((resolve, reject) => { video.onloadeddata = () => resolve(); video.onerror = () => reject(new Error(`Compact recording ${index} did not decode (${blob.size} bytes; error ${video.error?.code})`)); }); video.currentTime = .08; await new Promise<void>(resolve => { video.onseeked = () => resolve(); });
-      const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight; const ctx = canvas.getContext('2d')!; ctx.drawImage(video, 0, 0);
+    for (const index of [0, 1]) {
+      const blob = await recordFixture(view, sim, index ? portrait : undefined);
+      const { canvas, width, height, frame } = await decodeFixture(blob, .08), ctx = canvas.getContext('2d')!;
       const pixels = ctx.getImageData(190, index ? 624 : 330, 340, 60).data; let ink = 0; for (let i = 0; i < pixels.length; i += 4) if (pixels[i] > 40 && pixels[i] < 90 && pixels[i + 1] > 38) ink++;
-      results.push({ width: video.videoWidth, height: video.videoHeight, ink, frame: canvas.toDataURL() }); URL.revokeObjectURL(url);
+      results.push({ width, height, ink, frame });
     }
     view.dispose(); host.remove(); return results;
   });
