@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "id": "core:pudge",
+  "name": "Pudge",
+  "origin": "Dota 2",
+  "description": "The Butcher: Meat Hook reels prey into Rot, then Dismember channels a disabling, life-draining bite. Automatic three-skill Dota 2 arena adaptation.",
+  "author": "Ball Arena contributors (fan adaptation)",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#a5bd56",
+    "style": "core",
+    "body": "assets/body.png"
+  },
+  "stats": {
+    "maxHp": 180,
+    "radius": 0.43,
+    "mass": 1.9,
+    "cruiseSpeed": 3.2,
+    "maxSpeed": 12,
+    "contactDamage": 7,
+    "contactInterval": 0.55
+  },
+  "skills": [
+    {
+      "id": "q",
+      "type": "meat-hook",
+      "name": "Q · Meat Hook",
+      "damage": 18,
+      "cooldown": 5.5,
+      "duration": 0.2,
+      "power": 7,
+      "range": 4.5,
+      "windup": 0.18,
+      "icon": "assets/skill-q.png"
+    },
+    {
+      "id": "w",
+      "type": "rot",
+      "name": "W · Rot",
+      "damage": 2,
+      "cooldown": 0.2,
+      "duration": 0.2,
+      "power": 0,
+      "range": 1.15,
+      "tickInterval": 0.2,
+      "selfDamage": 2,
+      "slow": 0.25,
+      "icon": "assets/skill-w.png"
+    },
+    {
+      "id": "r",
+      "type": "dismember",
+      "name": "R · Dismember",
+      "damage": 5,
+      "cooldown": 9,
+      "duration": 2.75,
+      "power": 1.5,
+      "range": 0.55,
+      "tickInterval": 0.5,
+      "healRatio": 1,
+      "icon": "assets/skill-r.png"
+    }
+  ],
+  "assets": {
+    "license": "All rights reserved (Valve Corporation)",
+    "source": "Official Valve Pudge portrait and ability icons: https://www.dota2.com/hero/pudge . Character/artwork belong to Valve. See docs/DOTA_CHARACTERS.md."
+  }
+}

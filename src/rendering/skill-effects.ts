@@ -2,6 +2,9 @@ import { Graphics } from 'pixi.js';
 import type { Point, Simulation } from '../simulation/engine';
 import { direction } from '../simulation/geometry';
 import { presentedPosition } from './presentation';
+import { drawChampionEffects } from './champion-effects';
+import { drawPudgeEffects } from './pudge-effects';
+import { drawLeagueEffects } from './league-effects';
 
 type Surface = { under: Graphics; over: Graphics; point: (p: Point) => Point; scale: number; alpha: number };
 const tau = Math.PI * 2;
@@ -178,4 +181,7 @@ export function drawSkillEffects(sim: Simulation, { under, over, point, scale, a
   for (const hit of sim.particles) if (hit.kind === 'hit' && hit.life > hit.duration - .22) {
     burst(over, point(hit), 10, (hit.life - hit.duration + .22) / .22, hit.text === 'BLOCK' ? 0xa9eaff : 0xffdfb3, 8);
   }
+  drawChampionEffects(sim, { under, over, point, scale, alpha });
+  drawPudgeEffects(sim, { under, over, point, scale, alpha });
+  drawLeagueEffects(sim, { under, over, point, scale, alpha });
 }

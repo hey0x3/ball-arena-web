@@ -1,6 +1,6 @@
 # Contributing characters and skills
 
-The v0.2 simulator includes the schema, importer, templates, and checks below. Character and skill contributions are welcome. Read [implementation status](docs/IMPLEMENTATION.md) for the current parity limits.
+The v0.3 simulator includes the schema, importer, templates, and checks below. Character and skill contributions are welcome. Read [implementation status](docs/IMPLEMENTATION.md) for the current parity limits.
 
 ## Character contributions
 
@@ -8,8 +8,8 @@ The workflow is:
 
 1. Fork and clone this repository. Work on a branch.
 2. Copy `templates/character/character.json` into `content/characters/<folder>/character.json`. Characters are discovered automatically; no catalog list needs editing.
-3. Give the character a stable namespaced ID, appearance, stats, and zero to three skills.
-4. Optionally add PNG/WebP artwork to the character's `assets/` folder, set `appearance.body` to its relative path, and include author, source, and license metadata. Current audio is synthesized rather than imported.
+3. Give the character a stable namespaced ID, appearance, stats, and zero to three skills. Set the optional `origin` string to its game or universe (for example, `League of Legends`, `Dota 2`, or `Original creations`). Origins create roster filter categories automatically; the editor exposes this field and packs preserve it. Older community packs without it appear under Original creations.
+4. Optionally add PNG/WebP artwork to the character's `assets/` folder, set `appearance.body` to its relative path, and include author, source, and license metadata. Each skill can also declare an optional `icon` path, such as `assets/skill-q.png`. Icons are loaded, recorded and exported with the same media validation as portraits; omitted icons use a matching built-in symbol. Current audio is synthesized rather than imported.
 5. Reuse registered skills when they fit. Add a typed skill implementation if the character needs new mechanics.
 6. Validate the pack, simulate it against a reference opponent, and check restart behavior.
 7. Open a pull request with the character's behavior, screenshots or a short recording, and validation results.
@@ -75,6 +75,24 @@ Each skill has a unique `id`, registered `type`, customizable `name`, and numeri
 | `beam` | Damage, first-shot/shot interval, travel-direction aim-lock windup (`duration`), ray length (`range`), reflection count |
 | `dash` | Bonus contact damage, interval, target-lock windup, rush duration, impulse (`power`), rush speed (`range`); single empowered hit |
 | `puck` | Normal damage and speed (`range`), power-charge interval, power damage and speed (`power`); only physical contact strikes the puck |
+| `darkin-blade` | Three sword strikes, windup, recast interval, range, sweet-spot damage multiplier and movement-stop duration |
+| `infernal-chains` | Skillshot damage/speed/range, slow, diamond size and escape time, conditional pull and second hit |
+| `world-ender` | Active duration, damage/speed/healing multipliers and active-only damage leech |
+| `timewinder` | Outbound/return damage, speed/range, field duration, slow fraction and duration; one hit per leg |
+| `phase-dive` | Dash speed/time, blink-attack range, enhancement window and consumed bonus damage |
+| `chronobreak` | History length (1–4s), untargetable cast time, capped recent-damage healing, arrival damage and radius |
+| `meat-hook` | One locked-aim hook, windup, damage, speed (`power`), reach (`range`), cooldown; physical disable/reel and return |
+| `rot` | Proximity-toggled cloud, radius (`range`), damage and non-lethal `selfDamage` per `tickInterval`, slow fraction |
+| `dismember` | Damage per `tickInterval`, cooldown, channel duration, extra cast reach (`range`), pull speed (`power`), actual-damage healing fraction (`healRatio`) |
+| `orb-of-deception` | Outbound/return damage, speed/reach and cooldown; piercing orb hits once per leg and homes to its moving owner |
+| `charm` | Heart windup/speed/reach/damage, charm duration, disable and movement toward its caster |
+| `spirit-rush` | Dash count (`maxCharges`), speed/time, recast interval, bolt range/damage and post-combo cooldown |
+| `piltover-peacemaker` | Locked rifle windup, shot speed/reach and once-per-target piercing damage |
+| `yordle-snap-trap` | Placement range, arming time, lifetime/pool, root duration and follow-up headshot damage |
+| `ace-in-the-hole` | Targeted channel, reach, homing bullet speed and damage; disabled/untargetable interruption |
+| `urchin-strike` | Targeted dash-through reach/speed and consumed on-hit damage; collision ghosting grants no immunity |
+| `playful-trickster` | Untargetable vault time/reach, landing splash damage/radius and slow fraction/duration |
+| `chum-the-waters` | Lure speed/reach, shark delay, base damage/radius, travel multiplier, slow and knock-up |
 
 Included loadouts follow [the Unity parity reference](docs/UNITY_PARITY.md). Changes to their behavior should preserve the recorded source rules and targeted tests. Health panels and portrait recordings share `src/skills/status.ts`, so new mechanics should expose meaningful trigger/readiness information there.
 

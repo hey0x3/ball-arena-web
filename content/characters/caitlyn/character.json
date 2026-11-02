@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "core:caitlyn",
+  "name": "Caitlyn",
+  "origin": "League of Legends",
+  "description": "A charged penetrating rifle shot, armed snap traps with a follow-up headshot, and a channeled homing ultimate. Automatic Q/W/R arena adaptation.",
+  "author": "Ball Arena contributors (fan adaptation)",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#c3a0ec",
+    "style": "core",
+    "body": "assets/body.png"
+  },
+  "stats": {
+    "maxHp": 130,
+    "radius": 0.4,
+    "mass": 1.1,
+    "cruiseSpeed": 3.7,
+    "maxSpeed": 12,
+    "contactDamage": 5,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "q",
+      "type": "piltover-peacemaker",
+      "name": "Q · Piltover Peacemaker",
+      "damage": 16,
+      "cooldown": 4,
+      "duration": 0.55,
+      "power": 9,
+      "range": 5,
+      "windup": 0.55,
+      "icon": "assets/skill-q.png"
+    },
+    {
+      "id": "w",
+      "type": "yordle-snap-trap",
+      "name": "W · Yordle Snap Trap",
+      "damage": 14,
+      "cooldown": 4,
+      "duration": 7,
+      "power": 10,
+      "range": 2.5,
+      "windup": 0.6,
+      "controlDuration": 0.9,
+      "poolSize": 3,
+      "icon": "assets/skill-w.png"
+    },
+    {
+      "id": "r",
+      "type": "ace-in-the-hole",
+      "name": "R · Ace in the Hole",
+      "damage": 26,
+      "cooldown": 10,
+      "duration": 1,
+      "power": 12,
+      "range": 10,
+      "windup": 1,
+      "icon": "assets/skill-r.png"
+    }
+  ],
+  "assets": {
+    "license": "All rights reserved (Riot Games)",
+    "source": "Caitlyn portrait and skill icons from Riot Games Data Dragon 16.21.1 (https://ddragon.leagueoflegends.com/). Character/artwork belong to Riot Games. See docs/LEAGUE_CHARACTERS.md."
+  }
+}

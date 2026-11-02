@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "core:fizz",
+  "name": "Fizz",
+  "origin": "League of Legends",
+  "description": "Dash through prey, vault untargetably onto a trident, then call a shark with a delayed fish lure. Automatic Q/E/R arena adaptation.",
+  "author": "Ball Arena contributors (fan adaptation)",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#61d9ee",
+    "style": "core",
+    "body": "assets/body.png"
+  },
+  "stats": {
+    "maxHp": 140,
+    "radius": 0.4,
+    "mass": 0.95,
+    "cruiseSpeed": 4.5,
+    "maxSpeed": 12,
+    "contactDamage": 6,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "q",
+      "type": "urchin-strike",
+      "name": "Q · Urchin Strike",
+      "damage": 12,
+      "cooldown": 4.2,
+      "duration": 0.3,
+      "power": 10,
+      "range": 1.35,
+      "icon": "assets/skill-q.png"
+    },
+    {
+      "id": "e",
+      "type": "playful-trickster",
+      "name": "E · Playful / Trickster",
+      "damage": 14,
+      "cooldown": 6.5,
+      "duration": 0.65,
+      "power": 0,
+      "range": 1.4,
+      "zoneRadius": 1.05,
+      "slow": 0.35,
+      "slowDuration": 0.8,
+      "icon": "assets/skill-e.png"
+    },
+    {
+      "id": "r",
+      "type": "chum-the-waters",
+      "name": "R · Chum the Waters",
+      "damage": 22,
+      "cooldown": 9.5,
+      "duration": 1.5,
+      "power": 5,
+      "range": 4,
+      "zoneRadius": 1.1,
+      "slow": 0.35,
+      "controlDuration": 0.5,
+      "damageMultiplier": 1.5,
+      "icon": "assets/skill-r.png"
+    }
+  ],
+  "assets": {
+    "license": "All rights reserved (Riot Games)",
+    "source": "Fizz portrait and skill icons from Riot Games Data Dragon 16.21.1 (https://ddragon.leagueoflegends.com/). Character/artwork belong to Riot Games. See docs/LEAGUE_CHARACTERS.md."
+  }
+}

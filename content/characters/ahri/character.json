@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "core:ahri",
+  "name": "Ahri",
+  "origin": "League of Legends",
+  "description": "Returning spirit orb, a heart that charms prey, and three essence-firing dashes. Automatic Q/E/R arena adaptation.",
+  "author": "Ball Arena contributors (fan adaptation)",
+  "version": "1.0.0",
+  "appearance": {
+    "color": "#ec81d0",
+    "style": "core",
+    "body": "assets/body.png"
+  },
+  "stats": {
+    "maxHp": 135,
+    "radius": 0.4,
+    "mass": 1,
+    "cruiseSpeed": 4.2,
+    "maxSpeed": 12,
+    "contactDamage": 5,
+    "contactInterval": 0.5
+  },
+  "skills": [
+    {
+      "id": "q",
+      "type": "orb-of-deception",
+      "name": "Q · Orb of Deception",
+      "damage": 8,
+      "cooldown": 3.5,
+      "duration": 0.2,
+      "power": 6,
+      "range": 2.7,
+      "returnDamage": 8,
+      "icon": "assets/skill-q.png"
+    },
+    {
+      "id": "e",
+      "type": "charm",
+      "name": "E · Charm",
+      "damage": 6,
+      "cooldown": 5.8,
+      "duration": 1,
+      "power": 6,
+      "range": 3.5,
+      "windup": 0.15,
+      "icon": "assets/skill-e.png"
+    },
+    {
+      "id": "r",
+      "type": "spirit-rush",
+      "name": "R · Spirit Rush",
+      "damage": 7,
+      "cooldown": 9,
+      "duration": 0.16,
+      "power": 9,
+      "range": 2.2,
+      "maxCharges": 3,
+      "recastInterval": 0.55,
+      "icon": "assets/skill-r.png"
+    }
+  ],
+  "assets": {
+    "license": "All rights reserved (Riot Games)",
+    "source": "Ahri portrait and skill icons from Riot Games Data Dragon 16.21.1 (https://ddragon.leagueoflegends.com/). Character/artwork belong to Riot Games. See docs/LEAGUE_CHARACTERS.md."
+  }
+}

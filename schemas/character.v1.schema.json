@@ -20,6 +20,11 @@
       "type": "string",
       "maxLength": 300
     },
+    "origin": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
     "author": {
       "type": "string",
       "minLength": 1,
@@ -166,13 +171,35 @@
               "trail",
               "beam",
               "dash",
-              "puck"
+              "puck",
+              "darkin-blade",
+              "infernal-chains",
+              "world-ender",
+              "timewinder",
+              "phase-dive",
+              "chronobreak",
+              "meat-hook",
+              "rot",
+              "dismember",
+              "orb-of-deception",
+              "charm",
+              "spirit-rush",
+              "piltover-peacemaker",
+              "yordle-snap-trap",
+              "ace-in-the-hole",
+              "urchin-strike",
+              "playful-trickster",
+              "chum-the-waters"
             ]
           },
           "name": {
             "type": "string",
             "minLength": 1,
             "maxLength": 40
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 150
           },
           "damage": {
             "type": "number",
@@ -251,6 +278,81 @@
           },
           "powerDamage": {
             "type": "integer",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "recastInterval": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 3
+          },
+          "sweetSpotMultiplier": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "controlDuration": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "zoneRadius": {
+            "type": "number",
+            "minimum": 0.2,
+            "maximum": 3
+          },
+          "slow": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.9
+          },
+          "slowDuration": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 5
+          },
+          "damageMultiplier": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "speedMultiplier": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 2
+          },
+          "healMultiplier": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "healRatio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "heal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "rewindSeconds": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "returnDamage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
+          },
+          "tickInterval": {
+            "type": "number",
+            "minimum": 0.1,
+            "maximum": 2
+          },
+          "selfDamage": {
+            "type": "number",
             "minimum": 0,
             "maximum": 200
           }

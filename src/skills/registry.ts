@@ -1,10 +1,16 @@
 import type { SkillType } from '../content/schema';
 import { effectiveRadius, storedImpulse, type SkillContext } from '../simulation/engine';
 import { bladePoints, buildBeamPath, direction, length, polygonTouchesCircle } from '../simulation/geometry';
+import { championBehaviors } from './champions';
+import { pudgeBehaviors } from './pudge';
+import { leagueBehaviors } from './league';
 
 type Behavior = { tick?: (c: SkillContext) => void; wall?: (c: SkillContext, impact: number) => void; contact?: (c: SkillContext) => void };
 const expires = (remaining: number) => remaining <= .0002;
 export const behaviors: Record<SkillType, Behavior> = {
+  ...championBehaviors,
+  ...pudgeBehaviors,
+  ...leagueBehaviors,
   'wall-charge': {
     tick: ({ state, skill }) => {
       if (state.pendingBounce) { state.pendingBounce = false; state.charges = Math.min(skill.maxCharges ?? 3, state.charges + 1); }
@@ -30,16 +36,16 @@ export const behaviors: Record<SkillType, Behavior> = {
   projectile: {
     tick: ({ engine, self, skill, state, direction: d }) => {
       state.cooldown = Math.max(0, state.cooldown - .02);
-      if (!expires(state.cooldown)) return;
+      if (!expires(state.cooldown) || !engine.canAct(self)) return;
       state.cooldown = skill.cooldown;
       if (engine.projectile(self, skill, d)) { state.activations++; state.flash = .18; state.aim = { ...d }; }
     },
   },
   shield: {
-    tick: ({ skill, state, dt }) => {
+    tick: ({ engine, self, skill, state, dt }) => {
       if (state.capacity > 0) { state.active = Math.max(0, state.active - dt); if (expires(state.active)) { state.capacity = 0; state.active = 0; } }
       state.cooldown = Math.max(0, state.cooldown - dt);
-      if (expires(state.cooldown)) { state.capacity = skill.damage; state.active = skill.duration; state.cooldown = skill.cooldown; state.activations++; state.flash = .18; }
+      if (expires(state.cooldown) && engine.canAct(self)) { state.capacity = skill.damage; state.active = skill.duration; state.cooldown = skill.cooldown; state.activations++; state.flash = .18; }
     },
   },
   magnet: {
@@ -70,6 +76,7 @@ export const behaviors: Record<SkillType, Behavior> = {
   beam: {
     tick: ({ engine, self, skill, state, dt }) => {
       state.cooldown = Math.max(0, state.cooldown - dt);
+      if (!engine.canAct(self)) { state.targeting = false; return; }
       if (!state.targeting && state.cooldown <= skill.duration + .000001) {
         state.aim = direction({ x: 0, y: 0 }, self.body.getLinearVelocity()); state.targeting = true;
       }
@@ -83,6 +90,7 @@ export const behaviors: Record<SkillType, Behavior> = {
   dash: {
     tick: ({ engine, self, skill, state, direction: d, dt }) => {
       state.active = Math.max(0, state.active - dt); state.cooldown = Math.max(0, state.cooldown - dt);
+      if (!engine.canAct(self)) { state.targeting = false; state.active = 0; return; }
       if (!state.targeting && state.cooldown <= (skill.windup ?? .7) + .000001) { state.aim = { ...d }; state.targeting = true; }
       if (state.cooldown <= .0001) {
         const v = self.body.getLinearVelocity(), mass = self.body.getMass();

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { characterSchema, validateCharacter } from '../src/content/schema';
+import { characterAssetPaths, characterSchema, validateCharacter } from '../src/content/schema';
 
 const root = resolve(import.meta.dirname, '..');
 const path = join(root, 'content/characters');
@@ -11,7 +11,7 @@ for (const dir of readdirSync(path, { withFileTypes: true }).filter(d => d.isDir
   const character = validateCharacter(JSON.parse(readFileSync(file, 'utf8')));
   if (ids.has(character.id)) throw new Error(`Duplicate character ID: ${character.id}`);
   ids.add(character.id);
-  for (const asset of [character.appearance.body, character.appearance.weapon]) if (asset && !existsSync(join(path, dir.name, asset))) throw new Error(`Missing artwork for ${character.id}: ${asset}`);
+  for (const asset of characterAssetPaths(character)) if (!existsSync(join(path, dir.name, asset))) throw new Error(`Missing artwork for ${character.id}: ${asset}`);
 }
 validateCharacter(JSON.parse(readFileSync(join(root, 'templates/character/character.json'), 'utf8')));
 const schema = JSON.stringify(z.toJSONSchema(characterSchema), null, 2) + '\n';
